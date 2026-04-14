@@ -18,6 +18,9 @@ export abstract class BaseDurableObject<TAttachment> extends DurableObject<Env> 
     this.ctx.setWebSocketAutoResponse(new WebSocketRequestResponsePair('ping', 'pong'));
   }
 
+  // Hook for subclasses to react to a WebSocket disconnecting.
+  protected async onWebSocketDisconnected(attachment: TAttachment): Promise<void> {}
+
   protected async resetAlarm(): Promise<void> {
     // An alarm will be set for 1 hour after any activity. This ensures that if the DO becomes idle
     // (e.g. all games finish and all clients disconnect) it will eventually be cleaned up and free resources.
@@ -39,12 +42,16 @@ export abstract class BaseDurableObject<TAttachment> extends DurableObject<Env> 
   }
 
   async webSocketClose(ws: WebSocket, code: number, reason: string, wasClean: boolean): Promise<void> {
+    const attachment = this.sessions.get(ws);
     this.sessions.delete(ws);
+    if (attachment) await this.onWebSocketDisconnected(attachment);
   }
 
   async webSocketError(ws: WebSocket, error: unknown): Promise<void> {
     console.error('WebSocket error:', error);
+    const attachment = this.sessions.get(ws);
     this.sessions.delete(ws);
     ws.close(1011, 'WebSocket error');
+    if (attachment) await this.onWebSocketDisconnected(attachment);
   }
 }

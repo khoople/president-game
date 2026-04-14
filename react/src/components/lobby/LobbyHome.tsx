@@ -3,10 +3,11 @@ import LobbyTitle from './LobbyTitle';
 
 type Props = {
   onJoinLobby: (name: string, lobbyId: string) => Promise<string | null>;
+  onRejoinLobby: (lobbyId: string, userName: string) => void;
   onStartNewLobby: (name: string) => void;
 };
 
-export default function LobbyHome({ onJoinLobby, onStartNewLobby }: Props) {
+export default function LobbyHome({ onJoinLobby, onRejoinLobby, onStartNewLobby }: Props) {
   const [name, setName] = useState(() => sessionStorage.getItem('userName') ?? '');
   const [lobbyId, setLobbyId] = useState(() => {
     const param = new URLSearchParams(window.location.search).get('lobbyId');
@@ -32,15 +33,22 @@ export default function LobbyHome({ onJoinLobby, onStartNewLobby }: Props) {
   };
 
   const handleJoin = async () => {
-    const nameOk = validateName();
-    if (!lobbyId.trim()) {
+    const trimmedLobbyId = lobbyId.trim().toUpperCase();
+    if (!trimmedLobbyId) {
       setLobbyIdError('Lobby ID is required.');
-      if (nameOk) return;
       return;
     }
     setLobbyIdError('');
-    if (!nameOk) return;
-    const error = await onJoinLobby(name.trim(), lobbyId.trim().toUpperCase());
+
+    // If both the lobbyId and name match a stored session, rejoin directly.
+    const trimmedName = name.trim();
+    if (trimmedName && localStorage.getItem(`lobby-user-id-${trimmedLobbyId}-${trimmedName}`)) {
+      onRejoinLobby(trimmedLobbyId, trimmedName);
+      return;
+    }
+
+    if (!validateName()) return;
+    const error = await onJoinLobby(name.trim(), trimmedLobbyId);
     if (error) setLobbyIdError('Lobby not found.');
   };
 

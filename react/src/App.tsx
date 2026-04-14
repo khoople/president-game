@@ -32,6 +32,7 @@ function App() {
   const [lobbyUserId, setLobbyUserId] = useState<string>('');
   const lobbyIdRef = useRef<string>('');
   const lobbyUserIdRef = useRef<string>('');
+  const userNameRef = useRef<string>('');
   const gameIdRef = useRef<string | null>(null);
   const playerIdRef = useRef<string | null>(null);
   const lobbyWsRef = useRef<SocketHandler | null>(null);
@@ -75,6 +76,7 @@ function App() {
   };
 
   const handleExitLobby = async () => {
+    localStorage.removeItem(`lobby-user-id-${lobbyIdRef.current}-${userNameRef.current}`);
     await exitLobby(lobbyIdRef.current, lobbyUserIdRef.current);
     lobbyWsRef.current?.close();
     lobbyWsRef.current = null;
@@ -90,17 +92,32 @@ function App() {
     if ('error' in result) return result.error;
     lobbyIdRef.current = lobbyId;
     lobbyUserIdRef.current = result.lobbyUserId;
+    userNameRef.current = name;
     setLobbyUserId(result.lobbyUserId);
+    localStorage.setItem(`lobby-user-id-${lobbyId}-${name}`, result.lobbyUserId);
     connectToLobbySocket(lobbyId, result.lobbyUserId);
     setScreen('lobby-room');
     return null;
+  };
+
+  const handleRejoinLobby = (lobbyId: string, userName: string) => {
+    const storedLobbyUserId = localStorage.getItem(`lobby-user-id-${lobbyId}-${userName}`);
+    if (!storedLobbyUserId) return;
+    lobbyIdRef.current = lobbyId;
+    lobbyUserIdRef.current = storedLobbyUserId;
+    userNameRef.current = userName;
+    setLobbyUserId(storedLobbyUserId);
+    connectToLobbySocket(lobbyId, storedLobbyUserId);
+    setScreen('lobby-room');
   };
 
   const handleStartNewLobby = async (name: string) => {
     const { lobbyId, lobbyUserId } = await startLobby(name);
     lobbyIdRef.current = lobbyId;
     lobbyUserIdRef.current = lobbyUserId;
+    userNameRef.current = name;
     setLobbyUserId(lobbyUserId);
+    localStorage.setItem(`lobby-user-id-${lobbyId}-${name}`, lobbyUserId);
     connectToLobbySocket(lobbyId, lobbyUserId);
     setScreen('lobby-room');
   };
@@ -169,7 +186,7 @@ function App() {
 
   // Home screen with options to create or join a lobby.
   if (screen === 'home') {
-    return <LobbyHome onJoinLobby={handleJoinLobby} onStartNewLobby={handleStartNewLobby} />;
+    return <LobbyHome onJoinLobby={handleJoinLobby} onRejoinLobby={handleRejoinLobby} onStartNewLobby={handleStartNewLobby} />;
   }
 
   // Lobby room screen.

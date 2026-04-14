@@ -176,11 +176,18 @@ export class LobbyDurableObject extends BaseDurableObject<LobbySessionAttachment
 
     await this.resetAlarm();
 
-    if (lobbyId) {
+    if (lobbyId && lobbyUserId) {
+      await this.lobbyHost.setUserConnectionStatus(lobbyId, lobbyUserId, true);
       const lobbyState = await this.getLobbyState(lobbyId);
       server.send(JSON.stringify(lobbyState));
     }
 
     return new Response(null, { status: 101, webSocket: client });
+  }
+
+  protected override async onWebSocketDisconnected(attachment: LobbySessionAttachment): Promise<void> {
+    if (attachment.lobbyId && attachment.lobbyUserId) {
+      await this.lobbyHost.setUserConnectionStatus(attachment.lobbyId, attachment.lobbyUserId, false);
+    }
   }
 }

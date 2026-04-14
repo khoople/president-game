@@ -21,6 +21,7 @@ export function createGame(lobbyId: string, lobbyUsers: LobbyUser[]): GameState 
       playerName: user.name,
       isHost: user.isHost,
       hasJoined: false,
+      isDisconnected: true,
       hand: [],
     });
   }

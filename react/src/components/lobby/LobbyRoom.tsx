@@ -126,10 +126,10 @@ export default function LobbyRoom({ lobbyState, lobbyUserId, onStart, onExitLobb
                     width: '8px',
                     height: '8px',
                     borderRadius: '50%',
-                    background: '#27ae60',
+                    background: user.isDisconnected ? '#555' : '#27ae60',
                     flexShrink: 0,
                   }} />
-                  <span style={{ color: '#fff', fontSize: '14px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  <span style={{ color: user.isDisconnected ? '#666' : '#fff', fontStyle: user.isDisconnected ? 'italic' : 'normal', fontSize: '14px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {user.name}
                   </span>
                   {user.isHost && (

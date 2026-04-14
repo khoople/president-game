@@ -55,6 +55,22 @@ export default class PresidentGameHost {
     return result;
   }
 
+  async setPlayerConnectionStatus(gameId: string, playerId: string, isConnected: boolean): Promise<void> {
+    const gameState = await this.getGameState(gameId);
+    if (!gameState) return;
+
+    const player = gameState.players.find((p) => p.playerId === playerId);
+    if (!player) return;
+
+    player.isDisconnected = !isConnected;
+    await this.saveGameState(gameId, gameState);
+
+    for (const p of gameState.players) {
+      const playerState = derivePlayerState(p.playerId, gameState);
+      await this.sendPlayerState(p.playerId, playerState);
+    }
+  }
+
   async getPlayerState(gameId: string, playerId: string): Promise<PlayerState> {
     const gameState = await this.getGameState(gameId);
     if (!gameState) {

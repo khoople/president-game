@@ -3,6 +3,7 @@ export interface LobbyUser {
   name: string;
   joinedAt?: number;
   isHost: boolean;
+  isDisconnected: boolean;
 }
 
 export interface LobbyMessage {
@@ -68,6 +69,7 @@ export interface Player {
   isHost: boolean;
   hasJoined: boolean;
   hand: string[];
+  isDisconnected: boolean;
 }
 
 export interface GameState {
@@ -84,6 +86,7 @@ export interface Opponent {
   playerNumber: number;
   playerName: string;
   numCards: number;
+  isDisconnected: boolean;
 }
 
 export interface PlayerState {

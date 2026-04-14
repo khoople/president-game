@@ -16,7 +16,7 @@ export class LobbyHost {
 
     // Create fresh state directly — don't use getLobbyState since the new lobbyId won't exist yet.
     const lobbyState: LobbyState = { lobbyId, users: [], messages: [], status: 'waiting' };
-    lobbyState.users.push({ id: lobbyUserId, name: userName, joinedAt: Date.now(), isHost: true });
+    lobbyState.users.push({ id: lobbyUserId, name: userName, joinedAt: Date.now(), isHost: true, isDisconnected: true });
     await this.saveLobbyState(lobbyId, lobbyState);
 
     return { lobbyId, lobbyUserId };
@@ -30,7 +30,7 @@ export class LobbyHost {
 
     const lobbyUserId = crypto.randomUUID();
     const isHost = lobbyState.users.length === 0;
-    lobbyState.users.push({ id: lobbyUserId, name: userName, joinedAt: Date.now(), isHost });
+    lobbyState.users.push({ id: lobbyUserId, name: userName, joinedAt: Date.now(), isHost, isDisconnected: true });
     await this.saveLobbyState(lobbyId, lobbyState);
     await this.sendLobbyState(lobbyId, lobbyState);
 
@@ -63,6 +63,18 @@ export class LobbyHost {
     await this.sendLobbyState(lobbyId, lobbyState);
 
     return lobbyState;
+  }
+
+  async setUserConnectionStatus(lobbyId: string, lobbyUserId: string, isConnected: boolean): Promise<void> {
+    const lobbyState = await this.getLobbyState(lobbyId);
+    if (!lobbyState) return;
+
+    const user = lobbyState.users.find((u) => u.id === lobbyUserId);
+    if (!user) return;
+
+    user.isDisconnected = !isConnected;
+    await this.saveLobbyState(lobbyId, lobbyState);
+    await this.sendLobbyState(lobbyId, lobbyState);
   }
 
   async updateLobby(

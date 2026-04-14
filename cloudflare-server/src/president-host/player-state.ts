@@ -17,6 +17,7 @@ export function derivePlayerState(playerId: string, gameState: GameState): Playe
       playerNumber: p.playerNumber,
       playerName: p.playerName,
       numCards: p.hand.length,
+      isDisconnected: p.isDisconnected,
     }));
 
   return {

@@ -124,10 +124,17 @@ export class PresidentGameStateDurableObject extends BaseDurableObject<SessionAt
     await this.resetAlarm();
 
     if (gameId && playerId) {
+      await this.gameHost.setPlayerConnectionStatus(gameId, playerId, true);
       const playerState = await this.gameHost.getPlayerState(gameId, playerId);
       server.send(JSON.stringify(playerState));
     }
 
     return new Response(null, { status: 101, webSocket: client });
+  }
+
+  protected override async onWebSocketDisconnected(attachment: SessionAttachment): Promise<void> {
+    if (attachment.gameId && attachment.playerId) {
+      await this.gameHost.setPlayerConnectionStatus(attachment.gameId, attachment.playerId, false);
+    }
   }
 }
