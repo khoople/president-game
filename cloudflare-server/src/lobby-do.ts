@@ -25,7 +25,7 @@ export class LobbyDurableObject extends DurableObject<Env> {
     this.lobbyHost = new LobbyHost(
       this.getLobbyState.bind(this),
       this.saveLobbyState.bind(this),
-      this.broadcastLobbyState.bind(this),
+      this.sendLobbyState.bind(this),
     );
   }
 
@@ -46,7 +46,7 @@ export class LobbyDurableObject extends DurableObject<Env> {
     await this.ctx.storage.put(`lobby:${lobbyId}`, lobbyState);
   }
 
-  private async broadcastLobbyState(lobbyId: string, lobbyState: LobbyState): Promise<void> {
+  private async sendLobbyState(lobbyId: string, lobbyState: LobbyState): Promise<void> {
     const payload = JSON.stringify(lobbyState);
     for (const [ws, attachment] of this.sessions) {
       if (attachment.lobbyId === lobbyId) {
@@ -188,12 +188,11 @@ export class LobbyDurableObject extends DurableObject<Env> {
     return new Response(null, { status: 101, webSocket: client });
   }
 
-  async webSocketMessage(_ws: WebSocket, _message: string | ArrayBuffer): Promise<void> {
+  async webSocketMessage(ws: WebSocket, message: string | ArrayBuffer): Promise<void> {
     // Lobby interactions happen via HTTP POST.
   }
 
-  async webSocketClose(ws: WebSocket, code: number, reason: string, _wasClean: boolean): Promise<void> {
-    ws.close(code, reason);
+  async webSocketClose(ws: WebSocket, code: number, reason: string, wasClean: boolean): Promise<void> {
     this.sessions.delete(ws);
   }
 

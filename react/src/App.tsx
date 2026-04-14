@@ -29,10 +29,11 @@ function App() {
   const [activePlayerNumber, setActivePlayerNumber] = useState<number>(0);
   const [myPlayerNumber, setMyPlayerNumber] = useState<number>(0);
   const [message, setMessage] = useState<string | null>(null);
+  const [lobbyUserId, setLobbyUserId] = useState<string>('');
   const lobbyIdRef = useRef<string>('');
   const lobbyUserIdRef = useRef<string>('');
-  const gameIdRef = useRef<string>('');
-  const playerIdRef = useRef<string>('');
+  const gameIdRef = useRef<string | null>(null);
+  const playerIdRef = useRef<string | null>(null);
   const lobbyWsRef = useRef<SocketHandler | null>(null);
   const gameWsRef = useRef<SocketHandler | null>(null);
 
@@ -69,7 +70,7 @@ function App() {
     lobbyWsRef.current?.close();
     lobbyWsRef.current = getSocketHandler(
       () => openLobbyStateSocket(lobbyId, lobbyUserId),
-      (data) => setLobbyState(JSON.parse(data) as LobbyState),
+      (data) => applyLobbyState(JSON.parse(data) as LobbyState),
     );
   };
 
@@ -79,6 +80,7 @@ function App() {
     lobbyWsRef.current = null;
     lobbyIdRef.current = '';
     lobbyUserIdRef.current = '';
+    setLobbyUserId('');
     setLobbyState(null);
     setScreen('home');
   };
@@ -88,6 +90,7 @@ function App() {
     if ('error' in result) return result.error;
     lobbyIdRef.current = lobbyId;
     lobbyUserIdRef.current = result.lobbyUserId;
+    setLobbyUserId(result.lobbyUserId);
     connectToLobbySocket(lobbyId, result.lobbyUserId);
     setScreen('lobby-room');
     return null;
@@ -97,13 +100,16 @@ function App() {
     const { lobbyId, lobbyUserId } = await startLobby(name);
     lobbyIdRef.current = lobbyId;
     lobbyUserIdRef.current = lobbyUserId;
+    setLobbyUserId(lobbyUserId);
     connectToLobbySocket(lobbyId, lobbyUserId);
     setScreen('lobby-room');
   };
 
-  const handleJoinGame = async (gameId: string) => {
-    const { playerId } = await joinGame(gameId, lobbyUserIdRef.current);
-    if (!playerId) return;
+  const handleJoinGame = async (gameId: string, lobbyUserId: string) => {
+    const { playerId } = await joinGame(gameId, lobbyUserId);
+    if (!playerId) {
+      throw new Error('Unable to join game: no playerId returned');
+    }
 
     gameIdRef.current = gameId;
     playerIdRef.current = playerId;
@@ -113,16 +119,19 @@ function App() {
       (data) => applyPlayerState(JSON.parse(data) as PlayerState),
     );
 
+    // Show the game screen. There may be a delay before we receive the first player state update but it will populate once we do.
     setScreen('game');
   };
 
-  useEffect(() => {
-    if (lobbyState?.status !== 'in-game' || playerIdRef.current !== '') return;
-    const gameId = lobbyState.gameId;
-    if (!gameId) return;
+  const applyLobbyState = (newLobbyState: LobbyState) => {
+    setLobbyState(newLobbyState);
 
-    handleJoinGame(gameId);
-  }, [lobbyState]);
+    // When lobbyState.status changes to "in-game", attempt to join the game and then switch to displaying the game screen.
+    // If playerId isn't set we know we haven't joined the game yet.
+    if (!playerIdRef.current && newLobbyState.status === 'in-game' && newLobbyState.gameId) {
+      handleJoinGame(newLobbyState.gameId, lobbyUserIdRef.current);
+    }
+  };
 
   useEffect(() => {
     return () => {
@@ -139,6 +148,7 @@ function App() {
 
   const handlePlay = async () => {
     if (chosenHand.length === 0) return;
+    if (!gameIdRef.current || !playerIdRef.current) return;
     setMessage(null);
     const result = await playCards(gameIdRef.current, playerIdRef.current, chosenHand);
     if (!result.isValid) {
@@ -149,6 +159,7 @@ function App() {
   };
 
   const handlePass = async () => {
+    if (!gameIdRef.current || !playerIdRef.current) return;
     setMessage(null);
     const result = await playPass(gameIdRef.current, playerIdRef.current);
     if (!result.isValid) {
@@ -156,15 +167,17 @@ function App() {
     }
   };
 
+  // Home screen with options to create or join a lobby.
   if (screen === 'home') {
     return <LobbyHome onJoinLobby={handleJoinLobby} onStartNewLobby={handleStartNewLobby} />;
   }
 
+  // Lobby room screen.
   if (screen === 'lobby-room' && lobbyState) {
     return (
       <LobbyRoom
         lobbyState={lobbyState}
-        lobbyUserId={lobbyUserIdRef.current}
+        lobbyUserId={lobbyUserId}
         onStart={handleStartGame}
         onExitLobby={handleExitLobby}
         onSendMessage={(text) => {
@@ -175,6 +188,7 @@ function App() {
     );
   }
 
+  // Game screen.
   return (
     <div style={{ width: '100vw', height: '100dvh', background: '#2d6a2d', padding: '8px', paddingBottom: 'max(4px, env(safe-area-inset-bottom))', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: '12px' }}>
       <div style={{ flex: 1 }}>
@@ -196,8 +210,8 @@ function App() {
                 onCardClick={handleCardClick}
               />
               <div style={{ display: 'flex', gap: '12px' }}>
-                <PlayButton onClick={handlePlay} disabled={chosenHand.length === 0} />
-                <PassButton onClick={handlePass} disabled={myPlayerNumber !== activePlayerNumber} />
+                <PlayButton onClick={handlePlay} disabled={chosenHand.length === 0 || activePlayerNumber !== myPlayerNumber} />
+                <PassButton onClick={handlePass} disabled={myPlayerNumber !== activePlayerNumber || chosenHand.length > 0} />
               </div>
               <Turn isMyTurn={myPlayerNumber === activePlayerNumber} />
             </div>

@@ -1,15 +1,8 @@
 import type { Rank, Suit } from '../../president-client/card';
-
-export type CardSize = 'small' | 'medium' | 'large';
+import { CARD_DIMS, type CardSize } from '../../card-dims';
 
 const RED_SUITS: Suit[] = ['H', 'D'];
 const SUIT_SYMBOLS: Record<Suit, string> = { S: '♠', H: '♥', D: '♦', C: '♣' };
-
-export const CARD_DIMS: Record<CardSize, { width: number; height: number }> = {
-  small:  { width: 52,  height: 73  },
-  medium: { width: 64,  height: 90  },
-  large:  { width: 80,  height: 112 },
-};
 
 const STYLE: Record<CardSize, { cornerFont: string; suitFont: string; borderRadius: number }> = {
   small:  { cornerFont: '9px',  suitFont: '15px', borderRadius: 4 },

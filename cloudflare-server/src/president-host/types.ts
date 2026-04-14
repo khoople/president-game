@@ -29,7 +29,7 @@ export interface SaveLobbyStateInterface {
   (lobbyId: string, lobbyState: LobbyState): Promise<void>;
 }
 
-export interface BroadcastLobbyStateInterface {
+export interface SendLobbyStateInterface {
   (lobbyId: string, lobbyState: LobbyState): Promise<void>;
 }
 

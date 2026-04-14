@@ -1,4 +1,5 @@
-import Card, { CARD_DIMS } from './Card';
+import Card from './Card';
+import { CARD_DIMS } from '../../card-dims';
 import { parseCard } from '../../president-client/card';
 
 const OVERLAP = { small: 18, medium: 22, large: 28 };

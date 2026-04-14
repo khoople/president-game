@@ -66,7 +66,7 @@ export function getSocketHandler(
       const prev = ws;
       ws = null;
       prev.onclose = null;
-      try { prev.close(); } catch (_) {}
+      try { prev.close(); } catch { /* already closing */ }
     }
     attempt = 0;
     connect();

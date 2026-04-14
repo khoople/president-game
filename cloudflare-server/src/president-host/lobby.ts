@@ -1,10 +1,10 @@
-import type { LobbyState, GetLobbyStateInterface, SaveLobbyStateInterface, BroadcastLobbyStateInterface } from './types';
+import type { LobbyState, GetLobbyStateInterface, SaveLobbyStateInterface, SendLobbyStateInterface } from './types';
 
 export class LobbyHost {
   constructor(
     private getLobbyState: GetLobbyStateInterface,
     private saveLobbyState: SaveLobbyStateInterface,
-    private broadcastLobbyState: BroadcastLobbyStateInterface,
+    private sendLobbyState: SendLobbyStateInterface,
   ) {}
 
   async startLobby(userName: string): Promise<{ lobbyId: string; lobbyUserId: string }> {
@@ -32,7 +32,7 @@ export class LobbyHost {
     const isHost = lobbyState.users.length === 0;
     lobbyState.users.push({ id: lobbyUserId, name: userName, joinedAt: Date.now(), isHost });
     await this.saveLobbyState(lobbyId, lobbyState);
-    await this.broadcastLobbyState(lobbyId, lobbyState);
+    await this.sendLobbyState(lobbyId, lobbyState);
 
     return { lobbyUserId };
   }
@@ -43,7 +43,7 @@ export class LobbyHost {
 
     lobbyState.users = lobbyState.users.filter((u) => u.id !== lobbyUserId);
     await this.saveLobbyState(lobbyId, lobbyState);
-    await this.broadcastLobbyState(lobbyId, lobbyState);
+    await this.sendLobbyState(lobbyId, lobbyState);
 
     return lobbyState;
   }
@@ -60,7 +60,7 @@ export class LobbyHost {
       timestamp: Date.now(),
     });
     await this.saveLobbyState(lobbyId, lobbyState);
-    await this.broadcastLobbyState(lobbyId, lobbyState);
+    await this.sendLobbyState(lobbyId, lobbyState);
 
     return lobbyState;
   }
@@ -82,7 +82,7 @@ export class LobbyHost {
     if (updates.gameId !== undefined) lobbyState.gameId = updates.gameId;
 
     await this.saveLobbyState(lobbyId, lobbyState);
-    await this.broadcastLobbyState(lobbyId, lobbyState);
+    await this.sendLobbyState(lobbyId, lobbyState);
 
     return lobbyState;
   }

@@ -9,7 +9,6 @@ import type {
   PlayResponseInterface,
   StartGameResponseInterface,
   JoinGameResponseInterface,
-  GameState,
   PlayerState,
   Play,
 } from './types';
