@@ -1,26 +1,15 @@
-import { DurableObject } from 'cloudflare:workers';
 import { LobbyHost, LobbyNotFoundError, LobbyForbiddenError } from './president-host/lobby';
 import type { LobbyState } from './president-host/types';
+import { BaseDurableObject } from './abstract-do';
 
 type LobbySessionAttachment = { id: string; lobbyId?: string; lobbyUserId?: string };
 
-export class LobbyDurableObject extends DurableObject<Env> {
-  sessions: Map<WebSocket, LobbySessionAttachment>;
+export class LobbyDurableObject extends BaseDurableObject<LobbySessionAttachment> {
   private lobbyStateCache: Map<string, LobbyState> = new Map();
   private lobbyHost: LobbyHost;
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
-    this.sessions = new Map();
-
-    this.ctx.getWebSockets().forEach((ws) => {
-      const attachment = ws.deserializeAttachment() as LobbySessionAttachment | null;
-      if (attachment) {
-        this.sessions.set(ws, attachment);
-      }
-    });
-
-    this.ctx.setWebSocketAutoResponse(new WebSocketRequestResponsePair('ping', 'pong'));
 
     this.lobbyHost = new LobbyHost(
       this.getLobbyState.bind(this),
@@ -96,6 +85,7 @@ export class LobbyDurableObject extends DurableObject<Env> {
   private async handleStart(request: Request): Promise<Response> {
     const { userName } = await request.json<{ userName: string }>();
     const result = await this.lobbyHost.startLobby(userName);
+    await this.resetAlarm();
     return Response.json(result);
   }
 
@@ -103,6 +93,7 @@ export class LobbyDurableObject extends DurableObject<Env> {
     const { lobbyId, userName } = await request.json<{ lobbyId: string; userName: string }>();
     try {
       const result = await this.lobbyHost.joinLobby(lobbyId, userName);
+      await this.resetAlarm();
       return Response.json(result);
     } catch (e) {
       if (e instanceof LobbyNotFoundError) {
@@ -118,6 +109,7 @@ export class LobbyDurableObject extends DurableObject<Env> {
   private async handleExit(request: Request): Promise<Response> {
     const { lobbyId, lobbyUserId } = await request.json<{ lobbyId: string; lobbyUserId: string }>();
     const result = await this.lobbyHost.exitLobby(lobbyId, lobbyUserId);
+    await this.resetAlarm();
     return Response.json(result);
   }
 
@@ -129,6 +121,7 @@ export class LobbyDurableObject extends DurableObject<Env> {
       text: string;
     }>();
     const result = await this.lobbyHost.sendMessage(lobbyId, lobbyUserId, userName, text);
+    await this.resetAlarm();
     return Response.json(result);
   }
 
@@ -141,6 +134,7 @@ export class LobbyDurableObject extends DurableObject<Env> {
     }>();
     try {
       const result = await this.lobbyHost.updateLobby(lobbyId, lobbyUserId, { status, gameId });
+      await this.resetAlarm();
       return Response.json(result);
     } catch (e) {
       if (e instanceof LobbyForbiddenError) {
@@ -180,25 +174,13 @@ export class LobbyDurableObject extends DurableObject<Env> {
     server.serializeAttachment(attachment);
     this.sessions.set(server, attachment);
 
+    await this.resetAlarm();
+
     if (lobbyId) {
       const lobbyState = await this.getLobbyState(lobbyId);
       server.send(JSON.stringify(lobbyState));
     }
 
     return new Response(null, { status: 101, webSocket: client });
-  }
-
-  async webSocketMessage(ws: WebSocket, message: string | ArrayBuffer): Promise<void> {
-    // Lobby interactions happen via HTTP POST.
-  }
-
-  async webSocketClose(ws: WebSocket, code: number, reason: string, wasClean: boolean): Promise<void> {
-    this.sessions.delete(ws);
-  }
-
-  async webSocketError(ws: WebSocket, error: unknown): Promise<void> {
-    console.error('WebSocket error:', error);
-    this.sessions.delete(ws);
-    ws.close(1011, 'WebSocket error');
   }
 }

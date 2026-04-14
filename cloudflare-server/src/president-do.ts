@@ -1,27 +1,15 @@
-import { DurableObject } from 'cloudflare:workers';
 import PresidentGameHost from './president-host/game';
 import type { GameState, LobbyUser, Play, PlayerState } from './president-host/types';
+import { BaseDurableObject } from './abstract-do';
 
 type SessionAttachment = { id: string; gameId?: string; playerId?: string };
 
-export class PresidentGameStateDurableObject extends DurableObject<Env> {
-  sessions: Map<WebSocket, SessionAttachment>;
+export class PresidentGameStateDurableObject extends BaseDurableObject<SessionAttachment> {
   gameHost: PresidentGameHost;
   private gameStateCache: Map<string, GameState> = new Map();
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
-    this.sessions = new Map();
-
-    // Restore sessions that survived hibernation
-    this.ctx.getWebSockets().forEach((ws) => {
-      const attachment = ws.deserializeAttachment() as SessionAttachment | null;
-      if (attachment) {
-        this.sessions.set(ws, attachment);
-      }
-    });
-
-    this.ctx.setWebSocketAutoResponse(new WebSocketRequestResponsePair('ping', 'pong'));
 
     this.gameHost = new PresidentGameHost(
       this.sendPlayerState.bind(this),
@@ -88,18 +76,21 @@ export class PresidentGameStateDurableObject extends DurableObject<Env> {
   private async handleStartGame(request: Request): Promise<Response> {
     const { lobbyId, lobbyUsers } = await request.json<{ lobbyId: string; lobbyUsers: LobbyUser[] }>();
     const result = await this.gameHost.startGame(lobbyId, lobbyUsers);
+    await this.resetAlarm();
     return Response.json(result);
   }
 
   private async handleJoinGame(request: Request): Promise<Response> {
     const { gameId, lobbyUserId } = await request.json<{ gameId: string; lobbyUserId: string }>();
     const result = await this.gameHost.joinGame(gameId, lobbyUserId);
+    await this.resetAlarm();
     return Response.json(result);
   }
 
   private async handleMakePlay(request: Request): Promise<Response> {
     const play = await request.json<Play>();
     const result = await this.gameHost.makePlay(play);
+    await this.resetAlarm();
     return Response.json(result);
   }
 
@@ -130,25 +121,13 @@ export class PresidentGameStateDurableObject extends DurableObject<Env> {
     server.serializeAttachment(attachment);
     this.sessions.set(server, attachment);
 
+    await this.resetAlarm();
+
     if (gameId && playerId) {
       const playerState = await this.gameHost.getPlayerState(gameId, playerId);
       server.send(JSON.stringify(playerState));
     }
 
     return new Response(null, { status: 101, webSocket: client });
-  }
-
-  async webSocketMessage(ws: WebSocket, message: string | ArrayBuffer): Promise<void> {
-    // Players make moves via HTTP POST, we won't receive any messages on the websocket.
-  }
-
-  async webSocketClose(ws: WebSocket, code: number, reason: string, wasClean: boolean): Promise<void> {
-    this.sessions.delete(ws);
-  }
-
-  async webSocketError(ws: WebSocket, error: unknown): Promise<void> {
-    console.error('WebSocket error:', error);
-    this.sessions.delete(ws);
-    ws.close(1011, 'WebSocket error');
   }
 }
