@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react';
-import Table from './components/game/Table';
 import PlayerHand from './components/game/PlayerHand';
 import GameCenter from './components/game/GameCenter';
 import PlayButton from './components/game/PlayButton';
@@ -8,7 +7,7 @@ import Turn from './components/game/Turn';
 import PlayerList from './components/game/PlayerList';
 import { startGame, joinGame, openPlayerStateSocket, playCards, playPass } from './api/game';
 import { startLobby, joinLobby, exitLobby, updateLobby, openLobbyStateSocket, sendLobbyMessage } from './api/lobby';
-import type { LobbyState, PlayerState } from './president-client/types';
+import type { LobbyState, PlayerState, OpponentPlayerState } from './president-client/types';
 import { sortHand } from './president-client/card';
 import MessageDisplay from './components/game/MessageDisplay';
 import LobbyHome from './components/lobby/LobbyHome';
@@ -213,41 +212,35 @@ function App() {
 
   // Game screen.
   return (
-    <div style={{ width: '100vw', height: '100dvh', background: '#2d6a2d', padding: '8px', paddingBottom: 'max(4px, env(safe-area-inset-bottom))', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-      <div style={{ flex: 1 }}>
-        <Table
-          top={
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
-              <PlayerList
-                opponents={opponents}
-                myPlayerNumber={myPlayerNumber}
-                myPlayerName={myPlayerName}
-                myNumCards={playerHand.length}
-                activePlayerNumber={activePlayerNumber}
-                isMobile={isMobile}
-              />
-              <Turn
-                isMyTurn={myPlayerNumber === activePlayerNumber}
-                activePlayerName={opponents.find((o) => o.playerNumber === activePlayerNumber)?.playerName ?? myPlayerName}
-              />
-            </div>
-          }
-          center={<GameCenter activeHand={activeHand} discard={discard} />}
-          bottom={
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
-              <MessageDisplay message={message} />
-              <PlayerHand
-                cards={playerHand}
-                chosenCards={chosenHand}
-                onCardClick={handleCardClick}
-              />
-              <div style={{ display: 'flex', gap: '12px' }}>
-                <PlayButton onClick={handlePlay} disabled={chosenHand.length === 0 || activePlayerNumber !== myPlayerNumber} />
-                <PassButton onClick={handlePass} disabled={myPlayerNumber !== activePlayerNumber || chosenHand.length > 0} />
-              </div>
-            </div>
-          }
+    <div style={{ width: '100vw', height: '100dvh', background: '#2d6a2d', padding: '8px', paddingBottom: 'max(4px, env(safe-area-inset-bottom))', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+        <PlayerList
+          opponents={opponents}
+          myPlayerNumber={myPlayerNumber}
+          myPlayerName={myPlayerName}
+          myNumCards={playerHand.length}
+          activePlayerNumber={activePlayerNumber}
+          isMobile={isMobile}
         />
+        <Turn
+          isMyTurn={myPlayerNumber === activePlayerNumber}
+          activePlayerName={opponents.find((o) => o.playerNumber === activePlayerNumber)?.playerName ?? myPlayerName}
+        />
+      </div>
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <GameCenter activeHand={activeHand} discard={discard} />
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
+        <MessageDisplay message={message} />
+        <PlayerHand
+          cards={playerHand}
+          chosenCards={chosenHand}
+          onCardClick={handleCardClick}
+        />
+        <div style={{ display: 'flex', gap: '12px' }}>
+          <PlayButton onClick={handlePlay} disabled={chosenHand.length === 0 || activePlayerNumber !== myPlayerNumber} />
+          <PassButton onClick={handlePass} disabled={myPlayerNumber !== activePlayerNumber || chosenHand.length > 0} />
+        </div>
       </div>
     </div>
   );

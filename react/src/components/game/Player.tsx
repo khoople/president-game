@@ -26,11 +26,6 @@ const Player = ({ playerName, numCards, isActive, isDisconnected, isMe = false, 
       <span style={{ color: 'white', fontSize: compact ? '18px' : '28px', fontWeight: 'bold', fontFamily: 'Georgia, serif' }}>
         {numCards}
       </span>
-      {isDisconnected && (
-        <span style={{ position: 'absolute', top: '2px', right: '3px', fontSize: compact ? '9px' : '12px', lineHeight: 1 }}>
-          {'\u{1F5F2}'}
-        </span>
-      )}
     </div>
   );
 

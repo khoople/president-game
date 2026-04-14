@@ -12,7 +12,7 @@ type Props = {
 
 const PlayerList = ({ opponents, myPlayerNumber, myPlayerName, myNumCards, activePlayerNumber, isMobile }: Props) => {
   const totalPlayers = opponents.length + 1;
-  const compact = isMobile && totalPlayers >= 5;
+  const compact = isMobile && totalPlayers >= 4;
 
   const playerCards = Array.from({ length: totalPlayers }, (_, i) => {
     const playerNumber = i + 1;
@@ -24,7 +24,7 @@ const PlayerList = ({ opponents, myPlayerNumber, myPlayerName, myNumCards, activ
 
   if (compact) {
     return (
-      <div style={{ display: 'grid', gridTemplateRows: 'repeat(3, auto)', gridAutoFlow: 'column', gap: '6px', justifyContent: 'center', width: '100%' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: `repeat(2, auto)`, gap: '6px', justifyContent: 'space-evenly', width: '100%' }}>
         {playerCards.map((player) => (
           <Player key={player.playerNumber} {...player} isActive={player.playerNumber === activePlayerNumber} isMe={player.playerNumber === myPlayerNumber} compact />
         ))}
