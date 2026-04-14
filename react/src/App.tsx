@@ -5,10 +5,10 @@ import GameCenter from './components/game/GameCenter';
 import PlayButton from './components/game/PlayButton';
 import PassButton from './components/game/PassButton';
 import Turn from './components/game/Turn';
-import Opponent from './components/game/Opponent';
+import PlayerList from './components/game/PlayerList';
 import { startGame, joinGame, openPlayerStateSocket, playCards, playPass } from './api/game';
 import { startLobby, joinLobby, exitLobby, updateLobby, openLobbyStateSocket, sendLobbyMessage } from './api/lobby';
-import type { LobbyState, PlayerState, OpponentPlayerState } from './president-client/types';
+import type { LobbyState, PlayerState } from './president-client/types';
 import { sortHand } from './president-client/card';
 import MessageDisplay from './components/game/MessageDisplay';
 import LobbyHome from './components/lobby/LobbyHome';
@@ -28,7 +28,9 @@ function App() {
   const [opponents, setOpponents] = useState<OpponentPlayerState[]>([]);
   const [activePlayerNumber, setActivePlayerNumber] = useState<number>(0);
   const [myPlayerNumber, setMyPlayerNumber] = useState<number>(0);
+  const [myPlayerName, setMyPlayerName] = useState<string>('');
   const [message, setMessage] = useState<string | null>(null);
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
   const [lobbyUserId, setLobbyUserId] = useState<string>('');
   const lobbyIdRef = useRef<string>('');
   const lobbyUserIdRef = useRef<string>('');
@@ -45,6 +47,7 @@ function App() {
     setOpponents(playerState.opponents ?? []);
     setActivePlayerNumber(playerState.activePlayerNumber);
     setMyPlayerNumber(playerState.playerNumber);
+    setMyPlayerName(playerState.playerName);
   };
 
   const handleStartGame = async () => {
@@ -151,7 +154,10 @@ function App() {
   };
 
   useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', onResize);
     return () => {
+      window.removeEventListener('resize', onResize);
       lobbyWsRef.current?.close();
       gameWsRef.current?.close();
     };
@@ -211,10 +217,19 @@ function App() {
       <div style={{ flex: 1 }}>
         <Table
           top={
-            <div style={{ display: 'flex', gap: '24px', justifyContent: 'center' }}>
-              {opponents.map((opponent) => (
-                <Opponent key={opponent.playerNumber} {...opponent} isActive={opponent.playerNumber === activePlayerNumber} />
-              ))}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
+              <PlayerList
+                opponents={opponents}
+                myPlayerNumber={myPlayerNumber}
+                myPlayerName={myPlayerName}
+                myNumCards={playerHand.length}
+                activePlayerNumber={activePlayerNumber}
+                isMobile={isMobile}
+              />
+              <Turn
+                isMyTurn={myPlayerNumber === activePlayerNumber}
+                activePlayerName={opponents.find((o) => o.playerNumber === activePlayerNumber)?.playerName ?? myPlayerName}
+              />
             </div>
           }
           center={<GameCenter activeHand={activeHand} discard={discard} />}
@@ -230,7 +245,6 @@ function App() {
                 <PlayButton onClick={handlePlay} disabled={chosenHand.length === 0 || activePlayerNumber !== myPlayerNumber} />
                 <PassButton onClick={handlePass} disabled={myPlayerNumber !== activePlayerNumber || chosenHand.length > 0} />
               </div>
-              <Turn isMyTurn={myPlayerNumber === activePlayerNumber} />
             </div>
           }
         />

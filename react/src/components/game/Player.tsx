@@ -1,0 +1,58 @@
+import type { OpponentPlayerState } from '../../president-client/types';
+import { CARD_DIMS } from '../../card-dims';
+
+type Props = OpponentPlayerState & { isActive: boolean; isMe?: boolean; compact?: boolean };
+
+const Player = ({ playerName, numCards, isActive, isDisconnected, isMe = false, compact = false }: Props) => {
+  const bgColor = isDisconnected ? '#555' : isActive ? '#a01020' : '#6b0f1a';
+  const borderColor = isActive ? '#f9ca24' : isDisconnected ? '#888' : '#3d0a10';
+  const { width, height } = compact ? CARD_DIMS.small : CARD_DIMS.large;
+
+  const card = (
+    <div style={{
+      width: `${width}px`,
+      height: `${height}px`,
+      backgroundColor: bgColor,
+      borderRadius: '6px',
+      border: isActive ? `2px solid ${borderColor}` : `1px solid ${borderColor}`,
+      boxShadow: isActive ? '0 0 12px 4px rgba(249,202,36,0.6)' : '2px 2px 6px rgba(0,0,0,0.4)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      position: 'relative',
+      flexShrink: 0,
+      transition: 'box-shadow 0.2s, border 0.2s, background-color 0.2s',
+    }}>
+      <span style={{ color: 'white', fontSize: compact ? '18px' : '28px', fontWeight: 'bold', fontFamily: 'Georgia, serif' }}>
+        {numCards}
+      </span>
+      {isDisconnected && (
+        <span style={{ position: 'absolute', top: '2px', right: '3px', fontSize: compact ? '9px' : '12px', lineHeight: 1 }}>
+          {'\u{1F5F2}'}
+        </span>
+      )}
+    </div>
+  );
+
+  if (compact) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+        {card}
+        <span style={{ color: isDisconnected ? '#666' : isMe ? '#4cff72' : '#fff', fontStyle: isDisconnected ? 'italic' : 'normal', fontSize: '12px', fontWeight: 'bold', textShadow: '0 1px 2px rgba(0,0,0,0.6)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {playerName}
+        </span>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
+      <span style={{ color: isMe ? '#4cff72' : 'white', fontSize: '13px', fontWeight: 'bold', textShadow: '0 1px 2px rgba(0,0,0,0.6)' }}>
+        {playerName}
+      </span>
+      {card}
+    </div>
+  );
+};
+
+export default Player;

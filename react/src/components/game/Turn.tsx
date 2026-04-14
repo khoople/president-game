@@ -1,18 +1,18 @@
 interface TurnProps {
   isMyTurn: boolean;
+  activePlayerName: string;
 }
 
-const Turn = ({ isMyTurn }: TurnProps) => {
+const Turn = ({ isMyTurn, activePlayerName }: TurnProps) => {
   return (
     <span style={{
-      visibility: isMyTurn ? 'visible' : 'hidden',
-      color: '#f9ca24',
-      fontSize: '20px',
+      color: isMyTurn ? '#ffe000' : '#e8d44d',
+      fontSize: isMyTurn ? '20px' : '14px',
       fontWeight: '900',
-      letterSpacing: '2px',
+      letterSpacing: isMyTurn ? '2px' : '0px',
       textShadow: '0 1px 4px rgba(0,0,0,0.6)',
     }}>
-      YOUR TURN!
+      {isMyTurn ? 'YOUR TURN!' : `WAITING FOR ${activePlayerName.toUpperCase()} TO PLAY`}
     </span>
   );
 };
