@@ -50,7 +50,12 @@ export class LobbyDurableObject extends DurableObject<Env> {
     const payload = JSON.stringify(lobbyState);
     for (const [ws, attachment] of this.sessions) {
       if (attachment.lobbyId === lobbyId) {
-        ws.send(payload);
+        try {
+          ws.send(payload);
+        } catch (e) {
+          console.error('Failed to broadcast lobby state, removing stale session:', e);
+          this.sessions.delete(ws);
+        }
       }
     }
   }

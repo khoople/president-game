@@ -33,7 +33,12 @@ export class PresidentGameStateDurableObject extends DurableObject<Env> {
   private async sendPlayerState(playerId: string, state: PlayerState): Promise<void> {
     for (const [ws, attachment] of this.sessions) {
       if (attachment.playerId === playerId) {
-        ws.send(JSON.stringify(state));
+        try {
+          ws.send(JSON.stringify(state));
+        } catch (e) {
+          console.error('Failed to send player state, removing stale session:', e);
+          this.sessions.delete(ws);
+        }
         return;
       }
     }
