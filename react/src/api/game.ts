@@ -30,3 +30,7 @@ export async function playCards(gameId: string, playerId: string, chosenHand: st
 export async function playPass(gameId: string, playerId: string): Promise<{ isValid: boolean; invalidMessageLong?: string }> {
   return postJson('/game/play', { gameId, playerId, action: 'PASS' });
 }
+
+export async function exitGame(gameId: string, playerId: string): Promise<void> {
+  await postJson('/game/exit', { gameId, playerId });
+}

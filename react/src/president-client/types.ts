@@ -21,7 +21,7 @@ export interface LobbyState {
   users: LobbyUser[];
   messages: LobbyMessage[];
   gameId?: string;
-  status: 'waiting' | 'in-game' | 'ended';
+  status: 'waiting' | 'in-game' | 'closed';
 }
 
 // Player state types

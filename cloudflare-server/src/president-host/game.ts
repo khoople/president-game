@@ -1,5 +1,5 @@
 import { createGame } from './create-game';
-import { applyPlay } from './play';
+import { applyPlay, advanceTurn } from './play';
 import { derivePlayerState } from './player-state';
 import type {
   LobbyUser,
@@ -53,6 +53,67 @@ export default class PresidentGameHost {
     }
 
     return result;
+  }
+
+  async exitGame(gameId: string, playerId: string): Promise<void> {
+    const gameState = await this.getGameState(gameId);
+    if (!gameState) return;
+
+    const player = gameState.players.find((p) => p.playerId === playerId);
+    if (!player) return;
+
+    const exitingNumber = player.playerNumber;
+    const wasActive = gameState.activePlayerNumber === exitingNumber;
+
+    // Remove the exiting player.
+    gameState.players = gameState.players.filter((p) => p.playerId !== playerId);
+    if (gameState.players.length === 0) {
+      await this.saveGameState(gameId, gameState);
+      return;
+    }
+
+    // Renumber remaining players 1..N preserving original relative order.
+    const oldToNew = new Map<number, number>();
+    gameState.players
+      .sort((a, b) => a.playerNumber - b.playerNumber)
+      .forEach((p, i) => {
+        oldToNew.set(p.playerNumber, i + 1);
+        p.playerNumber = i + 1;
+      });
+
+    // Update activeHandPlayedBy; if that player just left, clear the active hand.
+    if (gameState.activeHandPlayedBy !== null) {
+      const mapped = oldToNew.get(gameState.activeHandPlayedBy);
+      if (mapped === undefined) {
+        gameState.activeHand = [];
+        gameState.activeHandPlayedBy = null;
+      } else {
+        gameState.activeHandPlayedBy = mapped;
+      }
+    }
+
+    if (wasActive && gameState.status !== 'GAME_OVER') {
+      // Determine the intended next player: the first remaining player whose original
+      // number was greater than exitingNumber, or wrap to player 1 (new numbering).
+      const countBefore = Array.from(oldToNew.keys()).filter((k) => k < exitingNumber).length;
+      const hasAfter = Array.from(oldToNew.keys()).some((k) => k > exitingNumber);
+      const intendedNext = hasAfter ? countBefore + 1 : 1;
+
+      // Set activePlayerNumber to the predecessor of intendedNext so advanceTurn
+      // lands on the right player (and skips any with no cards).
+      const n = gameState.players.length;
+      gameState.activePlayerNumber = ((intendedNext - 2 + n) % n) + 1;
+      advanceTurn(gameState);
+    } else {
+      gameState.activePlayerNumber = oldToNew.get(gameState.activePlayerNumber) ?? 1;
+    }
+
+    await this.saveGameState(gameId, gameState);
+
+    for (const p of gameState.players) {
+      const playerState = derivePlayerState(p.playerId, gameState);
+      await this.sendPlayerState(p.playerId, playerState);
+    }
   }
 
   async setPlayerConnectionStatus(gameId: string, playerId: string, isConnected: boolean): Promise<void> {

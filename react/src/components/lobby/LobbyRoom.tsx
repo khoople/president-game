@@ -8,6 +8,7 @@ type Props = {
   onEndGame: () => void;
   onExitLobby: () => void;
   onReturnToGame: () => void;
+  onQuitGame: () => void;
   onSendMessage: (text: string) => void;
 };
 
@@ -15,7 +16,7 @@ function formatTime(timestamp: number): string {
   return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
-export default function LobbyRoom({ lobbyState, lobbyUserId, onStart, onEndGame, onExitLobby, onReturnToGame, onSendMessage }: Props) {
+export default function LobbyRoom({ lobbyState, lobbyUserId, onStart, onEndGame, onExitLobby, onReturnToGame, onQuitGame, onSendMessage }: Props) {
   const [draft, setDraft] = useState('');
   const [copied, setCopied] = useState(false);
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
@@ -202,7 +203,26 @@ export default function LobbyRoom({ lobbyState, lobbyUserId, onStart, onEndGame,
                 END GAME
               </button>
             )}
-            {(!isHost || lobbyState.status !== 'in-game') && (
+            {!isHost && lobbyState.status === 'in-game' && (
+              <button
+                onClick={onQuitGame}
+                style={{
+                  padding: '12px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  background: '#c0392b',
+                  color: '#fff',
+                  fontSize: '15px',
+                  fontWeight: '900',
+                  letterSpacing: '1px',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+                  cursor: 'pointer',
+                }}
+              >
+                QUIT GAME
+              </button>
+            )}
+            {lobbyState.status !== 'in-game' && (
               <button
                 onClick={onExitLobby}
                 style={{

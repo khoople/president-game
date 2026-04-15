@@ -70,6 +70,10 @@ export class PresidentGameStateDurableObject extends BaseDurableObject<SessionAt
       return this.handleMakePlay(request);
     }
 
+    if (url.pathname === '/game/exit' && request.method === 'POST') {
+      return this.handleExitGame(request);
+    }
+
     return new Response('Not found', { status: 404 });
   }
 
@@ -92,6 +96,13 @@ export class PresidentGameStateDurableObject extends BaseDurableObject<SessionAt
     const result = await this.gameHost.makePlay(play);
     await this.resetAlarm();
     return Response.json(result);
+  }
+
+  private async handleExitGame(request: Request): Promise<Response> {
+    const { gameId, playerId } = await request.json<{ gameId: string; playerId: string }>();
+    await this.gameHost.exitGame(gameId, playerId);
+    await this.resetAlarm();
+    return Response.json({ success: true });
   }
 
   // WebSocket connection for a player to receive PlayerState updates.

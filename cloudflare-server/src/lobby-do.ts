@@ -102,6 +102,12 @@ export class LobbyDurableObject extends BaseDurableObject<LobbySessionAttachment
           headers: { 'Content-Type': 'application/json' },
         });
       }
+      if (e instanceof LobbyForbiddenError) {
+        return new Response(JSON.stringify({ error: 'Game is already in progress.' }), {
+          status: 403,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
       throw e;
     }
   }

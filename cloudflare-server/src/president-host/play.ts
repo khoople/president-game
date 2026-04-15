@@ -96,7 +96,7 @@ export function applyPlay(play: Play, gameState: GameState): PlayResponseInterfa
   return { isValid: true };
 }
 
-function advanceTurn(gameState: GameState): void {
+export function advanceTurn(gameState: GameState): void {
   const numPlayers = gameState.players.length;
   let next = (gameState.activePlayerNumber % numPlayers) + 1;
   const start = next;

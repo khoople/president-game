@@ -49,7 +49,7 @@ export default function LobbyHome({ onJoinLobby, onRejoinLobby, onStartNewLobby 
 
     if (!validateName()) return;
     const error = await onJoinLobby(name.trim(), trimmedLobbyId);
-    if (error) setLobbyIdError('Lobby not found.');
+    if (error) setLobbyIdError(error);
   };
 
   const handleStartNew = () => {

@@ -5,7 +5,7 @@ import PlayButton from './components/game/PlayButton';
 import PassButton from './components/game/PassButton';
 import Turn from './components/game/Turn';
 import PlayerList from './components/game/PlayerList';
-import { startGame, joinGame, openPlayerStateSocket, playCards, playPass } from './api/game';
+import { startGame, joinGame, openPlayerStateSocket, playCards, playPass, exitGame } from './api/game';
 import { startLobby, joinLobby, exitLobby, updateLobby, openLobbyStateSocket, sendLobbyMessage } from './api/lobby';
 import type { LobbyState, PlayerState, OpponentPlayerState } from './president-client/types';
 import { sortHand } from './president-client/card';
@@ -82,10 +82,17 @@ function App() {
   };
 
   const handleExitLobby = async () => {
-    localStorage.removeItem(`lobby-user-id-${lobbyIdRef.current}-${userNameRef.current}`);
-    await exitLobby(lobbyIdRef.current, lobbyUserIdRef.current);
+    // Disconnect from websocket first to avoid receiving updates while we're in the process of exiting.
     lobbyWsRef.current?.close();
     lobbyWsRef.current = null;
+
+    localStorage.removeItem(`lobby-user-id-${lobbyIdRef.current}-${userNameRef.current}`);
+    const isHost = lobbyState?.users.find((u) => u.id === lobbyUserIdRef.current)?.isHost ?? false;
+    if (isHost) {
+      await updateLobby(lobbyIdRef.current, lobbyUserIdRef.current, { status: 'closed' });
+    } else {
+      await exitLobby(lobbyIdRef.current, lobbyUserIdRef.current);
+    }
     lobbyIdRef.current = '';
     lobbyUserIdRef.current = '';
     setLobbyUserId('');
@@ -146,16 +153,15 @@ function App() {
     setScreen('game');
   };
 
-  const handleQuitGame = () => {
+  const handleQuitGame = async () => {
+    if (gameStatus !== 'GAME_OVER' && gameIdRef.current && playerIdRef.current) {
+      await exitGame(gameIdRef.current, playerIdRef.current);
+    }
     gameWsRef.current?.close();
     gameWsRef.current = null;
     playerIdRef.current = null;
     gameIdRef.current = null;
-    setScreen('lobby-room');
-  };
-
-  const handleEndGame = async () => {
-    await updateLobby(lobbyIdRef.current, lobbyUserIdRef.current, { status: 'waiting' });
+    await handleExitLobby();
   };
 
   const applyLobbyState = (newLobbyState: LobbyState) => {
@@ -168,7 +174,7 @@ function App() {
     }
 
     // When the lobby is reset to 'waiting' while in-game, all players quit game and return to lobby.
-    if (playerIdRef.current && newLobbyState.status === 'waiting') {
+    if (playerIdRef.current && newLobbyState.status === 'closed') {
       handleQuitGame();
     }
   };
@@ -222,9 +228,10 @@ function App() {
         lobbyState={lobbyState}
         lobbyUserId={lobbyUserId}
         onStart={handleStartGame}
-        onEndGame={handleEndGame}
+        onEndGame={handleQuitGame}
         onExitLobby={handleExitLobby}
         onReturnToGame={() => setScreen('game')}
+        onQuitGame={handleQuitGame}
         onSendMessage={(text) => {
           const user = lobbyState.users.find((u) => u.id === lobbyUserIdRef.current);
           if (user) sendLobbyMessage(lobbyIdRef.current, lobbyUserIdRef.current, user.name, text);

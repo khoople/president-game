@@ -24,8 +24,10 @@ export class LobbyHost {
 
   async joinLobby(lobbyId: string, userName: string): Promise<{ lobbyUserId: string }> {
     const lobbyState = await this.getLobbyState(lobbyId);
-    if (!lobbyState) {
+    if (!lobbyState || lobbyState.status === 'closed') {
       throw new LobbyNotFoundError(`Lobby '${lobbyId}' not found.`);
+    } else if (lobbyState.status === 'in-game') {
+      throw new LobbyForbiddenError(`Game is already in progress.`);
     }
 
     const lobbyUserId = crypto.randomUUID();
