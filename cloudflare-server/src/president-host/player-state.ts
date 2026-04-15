@@ -18,6 +18,7 @@ export function derivePlayerState(playerId: string, gameState: GameState): Playe
       playerName: p.playerName,
       numCards: p.hand.length,
       isDisconnected: p.isDisconnected,
+      winPosition: p.winPosition,
     }));
 
   return {
@@ -30,5 +31,7 @@ export function derivePlayerState(playerId: string, gameState: GameState): Playe
     timestamp: new Date().toISOString(),
     opponents,
     activePlayerNumber: gameState.activePlayerNumber,
+    playerWinPosition: player.winPosition,
+    gameStatus: gameState.status,
   };
 }

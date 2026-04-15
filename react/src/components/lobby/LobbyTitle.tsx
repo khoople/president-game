@@ -4,19 +4,19 @@ export default function LobbyTitle() {
       <h1 style={{
         color: '#fff',
         margin: 0,
-        fontSize: '52px',
-        fontWeight: '900',
+        fontSize: '72px',
+        fontFamily: "'Barriecito', Arial, sans-serif",
+        fontWeight: '400',
         letterSpacing: '2px',
       }}>
         President
       </h1>
       <p style={{
         color: '#d4f0d4',
-        margin: '6px 0 0',
+        margin: '6px 0 16px',
         fontSize: '16px',
-        fontStyle: 'italic',
       }}>
-        The drinking card game!
+        A multiplayer drinking card game
       </p>
     </div>
   );

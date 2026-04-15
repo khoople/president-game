@@ -66,7 +66,7 @@ export default function LobbyHome({ onJoinLobby, onRejoinLobby, onStartNewLobby 
       flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'flex-start',
-      padding: '80px 16px 16px',
+      padding: '60px 16px 16px',
       gap: '20px',
       boxSizing: 'border-box',
     }}>
@@ -114,8 +114,9 @@ export default function LobbyHome({ onJoinLobby, onRejoinLobby, onStartNewLobby 
 
         {/* Join row */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: 1 }}>
+              <label style={{ color: '#ccc', fontSize: '14px' }}>Code</label>
               <input
                 value={lobbyId}
                 onChange={(e) => {
@@ -123,7 +124,7 @@ export default function LobbyHome({ onJoinLobby, onRejoinLobby, onStartNewLobby 
                   setLobbyId(val);
                   if (lobbyIdError) setLobbyIdError('');
                 }}
-                placeholder="Lobby ID"
+                placeholder=""
                 maxLength={6}
                 style={{
                   padding: '10px 12px',
@@ -144,17 +145,20 @@ export default function LobbyHome({ onJoinLobby, onRejoinLobby, onStartNewLobby 
               onClick={handleJoin}
               style={{
                 padding: '10px 16px',
-                borderRadius: '6px',
+                borderRadius: '8px',
                 border: 'none',
                 background: '#2980b9',
                 color: '#fff',
                 fontSize: '14px',
+                fontWeight: '900',
+                letterSpacing: '1px',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
                 cursor: 'pointer',
                 whiteSpace: 'nowrap',
                 flexShrink: 0,
               }}
             >
-              Join Lobby
+              JOIN LOBBY
             </button>
           </div>
           {lobbyIdError && (
@@ -172,17 +176,21 @@ export default function LobbyHome({ onJoinLobby, onRejoinLobby, onStartNewLobby 
         {/* Start New Lobby button */}
         <button
           onClick={handleStartNew}
+          disabled={!!lobbyId}
           style={{
             padding: '12px',
-            borderRadius: '6px',
+            borderRadius: '8px',
             border: 'none',
-            background: '#c0392b',
+            background: lobbyId ? '#777' : '#c0392b',
             color: '#fff',
             fontSize: '15px',
-            cursor: 'pointer',
+            fontWeight: '900',
+            letterSpacing: '1px',
+            boxShadow: lobbyId ? 'none' : '0 4px 12px rgba(0,0,0,0.4)',
+            cursor: lobbyId ? 'default' : 'pointer',
           }}
         >
-          Start New Lobby
+          START NEW LOBBY
         </button>
       </div>
     </div>

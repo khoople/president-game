@@ -1,4 +1,4 @@
-import { GameState, Play, PlayResponseInterface } from './types';
+import { GameState, Play, PlayResponseInterface, Player } from './types';
 import { rankOf, rankIndex } from './card';
 
 /**
@@ -42,6 +42,12 @@ export function applyPlay(play: Play, gameState: GameState): PlayResponseInterfa
     gameState.discard = [chosenHand];
     gameState.activeHand = [];
     gameState.activeHandPlayedBy = null;
+    assignWinPosition(player, gameState);
+    checkGameOver(gameState);
+    // If the player ran out of cards, they can't take another turn — skip to the next player.
+    if (player.hand.length === 0) {
+      advanceTurn(gameState);
+    }
     return { isValid: true };
   }
 
@@ -84,17 +90,34 @@ export function applyPlay(play: Play, gameState: GameState): PlayResponseInterfa
   gameState.activeHand = chosenHand;
   gameState.activeHandPlayedBy = player.playerNumber;
   removeFromHand(player.hand, chosenHand);
+  assignWinPosition(player, gameState);
+  checkGameOver(gameState);
 
   return { isValid: true };
 }
 
 function advanceTurn(gameState: GameState): void {
   const numPlayers = gameState.players.length;
-  gameState.activePlayerNumber = (gameState.activePlayerNumber % numPlayers) + 1;
+  let next = (gameState.activePlayerNumber % numPlayers) + 1;
+  const start = next;
 
-  // If the turn has returned to the player who last played, everyone else has passed.
-  // Clear the active hand so they can open with anything.
-  if (gameState.activeHandPlayedBy !== null && gameState.activePlayerNumber === gameState.activeHandPlayedBy) {
+  // Skip players who have already finished (no cards remaining).
+  // Track whether we skip over the player who last played the active hand.
+  let skippedPlayedBy = false;
+  while (gameState.players.find((p) => p.playerNumber === next)?.hand.length === 0) {
+    if (next === gameState.activeHandPlayedBy) {
+      skippedPlayedBy = true;
+    }
+    next = (next % numPlayers) + 1;
+    if (next === start) break; // all remaining players are finished
+  }
+
+  gameState.activePlayerNumber = next;
+
+  // If the turn has returned to (or skipped past) the player who last played,
+  // everyone still active has passed — clear the active hand.
+  if (gameState.activeHandPlayedBy !== null &&
+      (gameState.activePlayerNumber === gameState.activeHandPlayedBy || skippedPlayedBy)) {
     gameState.discard.push(gameState.activeHand);
     gameState.activeHand = [];
     gameState.activeHandPlayedBy = null;
@@ -105,5 +128,19 @@ function removeFromHand(hand: string[], cards: string[]): void {
   for (const card of cards) {
     const index = hand.indexOf(card);
     if (index !== -1) hand.splice(index, 1);
+  }
+}
+
+function assignWinPosition(player: Player, gameState: GameState): void {
+  if (player.hand.length === 0 && player.winPosition === null) {
+    player.winPosition = gameState.players.filter((p) => p.winPosition !== null).length + 1;
+  }
+}
+
+function checkGameOver(gameState: GameState): void {
+  if (gameState.status === 'GAME_OVER') return;
+  const playersWithCards = gameState.players.filter((p) => p.hand.length > 0).length;
+  if (playersWithCards <= 1) {
+    gameState.status = 'GAME_OVER';
   }
 }

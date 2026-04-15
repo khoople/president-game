@@ -10,6 +10,7 @@ export function createGame(lobbyId: string, lobbyUsers: LobbyUser[]): GameState 
     activeHand: [],
     activePlayerNumber: 1,
     activeHandPlayedBy: null,
+    status: 'PLAYING',
   };
 
   for (let i = 0; i < lobbyUsers.length; i++) {
@@ -23,6 +24,7 @@ export function createGame(lobbyId: string, lobbyUsers: LobbyUser[]): GameState 
       hasJoined: false,
       isDisconnected: true,
       hand: [],
+      winPosition: null,
     });
   }
 

@@ -91,6 +91,7 @@ export class LobbyHost {
     }
 
     if (updates.status !== undefined) lobbyState.status = updates.status;
+    if (updates.status === 'waiting') lobbyState.gameId = undefined;
     if (updates.gameId !== undefined) lobbyState.gameId = updates.gameId;
 
     await this.saveLobbyState(lobbyId, lobbyState);

@@ -70,6 +70,7 @@ export interface Player {
   hasJoined: boolean;
   hand: string[];
   isDisconnected: boolean;
+  winPosition: number | null;
 }
 
 export interface GameState {
@@ -80,6 +81,7 @@ export interface GameState {
   activeHand: string[];
   activePlayerNumber: number;
   activeHandPlayedBy: number | null;
+  status: 'PLAYING' | 'GAME_OVER';
 }
 
 export interface Opponent {
@@ -87,6 +89,7 @@ export interface Opponent {
   playerName: string;
   numCards: number;
   isDisconnected: boolean;
+  winPosition: number | null;
 }
 
 export interface PlayerState {
@@ -99,6 +102,8 @@ export interface PlayerState {
   timestamp: string;
   opponents: Opponent[];
   activePlayerNumber: number;
+  playerWinPosition: number | null;
+  gameStatus: 'PLAYING' | 'GAME_OVER';
 }
 
 export interface Play {

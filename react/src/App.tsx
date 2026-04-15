@@ -28,6 +28,8 @@ function App() {
   const [activePlayerNumber, setActivePlayerNumber] = useState<number>(0);
   const [myPlayerNumber, setMyPlayerNumber] = useState<number>(0);
   const [myPlayerName, setMyPlayerName] = useState<string>('');
+  const [myWinPosition, setMyWinPosition] = useState<number | null>(null);
+  const [gameStatus, setGameStatus] = useState<'PLAYING' | 'GAME_OVER'>('PLAYING');
   const [message, setMessage] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
   const [lobbyUserId, setLobbyUserId] = useState<string>('');
@@ -47,6 +49,8 @@ function App() {
     setActivePlayerNumber(playerState.activePlayerNumber);
     setMyPlayerNumber(playerState.playerNumber);
     setMyPlayerName(playerState.playerName);
+    setMyWinPosition(playerState.playerWinPosition ?? null);
+    setGameStatus(playerState.gameStatus ?? 'PLAYING');
   };
 
   const handleStartGame = async () => {
@@ -142,6 +146,18 @@ function App() {
     setScreen('game');
   };
 
+  const handleQuitGame = () => {
+    gameWsRef.current?.close();
+    gameWsRef.current = null;
+    playerIdRef.current = null;
+    gameIdRef.current = null;
+    setScreen('lobby-room');
+  };
+
+  const handleEndGame = async () => {
+    await updateLobby(lobbyIdRef.current, lobbyUserIdRef.current, { status: 'waiting' });
+  };
+
   const applyLobbyState = (newLobbyState: LobbyState) => {
     setLobbyState(newLobbyState);
 
@@ -149,6 +165,11 @@ function App() {
     // If playerId isn't set we know we haven't joined the game yet.
     if (!playerIdRef.current && newLobbyState.status === 'in-game' && newLobbyState.gameId) {
       handleJoinGame(newLobbyState.gameId, lobbyUserIdRef.current);
+    }
+
+    // When the lobby is reset to 'waiting' while in-game, all players quit game and return to lobby.
+    if (playerIdRef.current && newLobbyState.status === 'waiting') {
+      handleQuitGame();
     }
   };
 
@@ -201,7 +222,9 @@ function App() {
         lobbyState={lobbyState}
         lobbyUserId={lobbyUserId}
         onStart={handleStartGame}
+        onEndGame={handleEndGame}
         onExitLobby={handleExitLobby}
+        onReturnToGame={() => setScreen('game')}
         onSendMessage={(text) => {
           const user = lobbyState.users.find((u) => u.id === lobbyUserIdRef.current);
           if (user) sendLobbyMessage(lobbyIdRef.current, lobbyUserIdRef.current, user.name, text);
@@ -213,18 +236,27 @@ function App() {
   // Game screen.
   return (
     <div style={{ width: '100vw', height: '100dvh', background: '#2d6a2d', padding: '8px', paddingBottom: 'max(4px, env(safe-area-inset-bottom))', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', position: 'relative' }}>
+        <button
+          onClick={() => setScreen('lobby-room')}
+          style={{ position: 'absolute', top: 0, right: 0, padding: '3px 14px', fontSize: '11px', fontWeight: 'bold', letterSpacing: '1px', color: '#ccc', background: 'linear-gradient(to bottom, #3a3a3a, #1a1a1a)', border: '1px solid #111', borderRadius: '4px', cursor: 'pointer', boxShadow: '0 1px 0 rgba(255,255,255,0.12) inset, 1px 1px 3px rgba(0,0,0,0.8)' }}
+        >
+          LOBBY
+        </button>
         <PlayerList
           opponents={opponents}
           myPlayerNumber={myPlayerNumber}
           myPlayerName={myPlayerName}
           myNumCards={playerHand.length}
+          myWinPosition={myWinPosition}
           activePlayerNumber={activePlayerNumber}
           isMobile={isMobile}
         />
         <Turn
           isMyTurn={myPlayerNumber === activePlayerNumber}
           activePlayerName={opponents.find((o) => o.playerNumber === activePlayerNumber)?.playerName ?? myPlayerName}
+          myWinPosition={myWinPosition}
+          gameStatus={gameStatus}
         />
       </div>
       <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -237,10 +269,19 @@ function App() {
           chosenCards={chosenHand}
           onCardClick={handleCardClick}
         />
-        <div style={{ display: 'flex', gap: '12px' }}>
-          <PlayButton onClick={handlePlay} disabled={chosenHand.length === 0 || activePlayerNumber !== myPlayerNumber} />
-          <PassButton onClick={handlePass} disabled={myPlayerNumber !== activePlayerNumber || chosenHand.length > 0} />
-        </div>
+        {gameStatus === 'GAME_OVER' ? (
+          <button
+            onClick={() => setScreen('lobby-room')}
+            style={{ padding: '12px 32px', fontSize: '16px', fontWeight: '900', letterSpacing: '1px', background: '#c0392b', color: 'white', border: '2px solid #922b21', borderRadius: '8px', cursor: 'pointer', boxShadow: '2px 2px 6px rgba(0,0,0,0.4)' }}
+          >
+            BACK TO LOBBY
+          </button>
+        ) : (
+          <div style={{ display: 'flex', gap: '12px' }}>
+            <PlayButton onClick={handlePlay} disabled={chosenHand.length === 0 || activePlayerNumber !== myPlayerNumber} />
+            <PassButton onClick={handlePass} disabled={myPlayerNumber !== activePlayerNumber || chosenHand.length > 0} />
+          </div>
+        )}
       </div>
     </div>
   );

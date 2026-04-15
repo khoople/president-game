@@ -1,11 +1,13 @@
 import type { OpponentPlayerState } from '../../president-client/types';
 import { CARD_DIMS } from '../../card-dims';
+import { ordinal } from '../../president-client/ordinals';
 
 type Props = OpponentPlayerState & { isActive: boolean; isMe?: boolean; compact?: boolean };
 
-const Player = ({ playerName, numCards, isActive, isDisconnected, isMe = false, compact = false }: Props) => {
-  const bgColor = isDisconnected ? '#555' : isActive ? '#a01020' : '#6b0f1a';
-  const borderColor = isActive ? '#f9ca24' : isDisconnected ? '#888' : '#3d0a10';
+const Player = ({ playerName, numCards, isActive, isDisconnected, winPosition, isMe = false, compact = false }: Props) => {
+  const finished = winPosition !== null;
+  const bgColor = finished ? '#1a4a8a' : isDisconnected ? '#555' : isActive ? '#a01020' : '#6b0f1a';
+  const borderColor = finished ? '#5a9fd4' : isActive ? '#f9ca24' : isDisconnected ? '#888' : '#3d0a10';
   const { width, height } = compact ? CARD_DIMS.small : CARD_DIMS.large;
 
   const card = (
@@ -23,8 +25,8 @@ const Player = ({ playerName, numCards, isActive, isDisconnected, isMe = false, 
       flexShrink: 0,
       transition: 'box-shadow 0.2s, border 0.2s, background-color 0.2s',
     }}>
-      <span style={{ color: 'white', fontSize: compact ? '18px' : '28px', fontWeight: 'bold', fontFamily: 'Georgia, serif' }}>
-        {numCards}
+      <span style={{ color: 'white', fontSize: compact ? '14px' : '22px', fontWeight: 'bold', fontFamily: 'Georgia, serif' }}>
+        {finished ? ordinal(winPosition) : numCards}
       </span>
     </div>
   );

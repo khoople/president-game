@@ -31,6 +31,7 @@ export interface OpponentPlayerState {
   playerName: string;
   numCards: number;
   isDisconnected: boolean;
+  winPosition: number | null;
 }
 
 export interface PlayerState {
@@ -43,4 +44,6 @@ export interface PlayerState {
   timestamp: string;
   opponents: OpponentPlayerState[];
   activePlayerNumber: number;
+  playerWinPosition: number | null;
+  gameStatus: 'PLAYING' | 'GAME_OVER';
 }

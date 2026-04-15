@@ -5,7 +5,9 @@ type Props = {
   lobbyState: LobbyState;
   lobbyUserId: string;
   onStart: () => void;
+  onEndGame: () => void;
   onExitLobby: () => void;
+  onReturnToGame: () => void;
   onSendMessage: (text: string) => void;
 };
 
@@ -13,7 +15,7 @@ function formatTime(timestamp: number): string {
   return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
-export default function LobbyRoom({ lobbyState, lobbyUserId, onStart, onExitLobby, onSendMessage }: Props) {
+export default function LobbyRoom({ lobbyState, lobbyUserId, onStart, onEndGame, onExitLobby, onReturnToGame, onSendMessage }: Props) {
   const [draft, setDraft] = useState('');
   const [copied, setCopied] = useState(false);
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
@@ -60,7 +62,7 @@ export default function LobbyRoom({ lobbyState, lobbyUserId, onStart, onExitLobb
       flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'flex-start',
-      padding: isMobile ? '32px 12px 12px' : '40px 24px 24px',
+      padding: isMobile ? '12px 12px 12px' : '20px 24px 24px',
       boxSizing: 'border-box',
       gap: '16px',
     }}>
@@ -82,7 +84,7 @@ export default function LobbyRoom({ lobbyState, lobbyUserId, onStart, onExitLobb
           display: 'flex',
           flexDirection: 'column',
           gap: '12px',
-          ...(isMobile ? { width: '100%', flexShrink: 0 } : { width: '220px', flexShrink: 0 }),
+          ...(isMobile ? { width: '100%', flexShrink: 0 } : { width: '280px', flexShrink: 0 }),
           boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
         }}>
           <div>
@@ -143,37 +145,82 @@ export default function LobbyRoom({ lobbyState, lobbyUserId, onStart, onExitLobb
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: isMobile ? '0' : 'auto' }}>
-            {isHost && (
+              {lobbyState.status === 'in-game' && (
+              <button
+                onClick={onReturnToGame}
+                style={{
+                  padding: '12px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  background: '#3ab600',
+                  color: '#fff',
+                  fontSize: '15px',
+                  fontWeight: '900',
+                  letterSpacing: '1px',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+                  cursor: 'pointer',
+                }}
+              >
+                RETURN TO GAME
+              </button>
+            )}
+            {isHost && lobbyState.status !== 'in-game' && (
               <button
                 onClick={onStart}
                 style={{
                   padding: '12px',
-                  borderRadius: '6px',
+                  borderRadius: '8px',
                   border: 'none',
                   background: '#c0392b',
                   color: '#fff',
                   fontSize: '15px',
-                  fontWeight: 'bold',
+                  fontWeight: '900',
+                  letterSpacing: '1px',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
                   cursor: 'pointer',
                 }}
               >
-                Start Game
+                START GAME
               </button>
             )}
-            <button
-              onClick={onExitLobby}
-              style={{
-                padding: '12px',
-                borderRadius: '6px',
-                border: 'none',
-                background: '#2980b9',
-                color: '#fff',
-                fontSize: '15px',
-                cursor: 'pointer',
-              }}
-            >
-              Exit Lobby
-            </button>
+            {isHost && lobbyState.status === 'in-game' && (
+              <button
+                onClick={onEndGame}
+                style={{
+                  padding: '12px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  background: '#c0392b',
+                  color: '#fff',
+                  fontSize: '15px',
+                  fontWeight: '900',
+                  letterSpacing: '1px',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+                  cursor: 'pointer',
+                }}
+              >
+                END GAME
+              </button>
+            )}
+            {(!isHost || lobbyState.status !== 'in-game') && (
+              <button
+                onClick={onExitLobby}
+                style={{
+                  padding: '12px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  background: '#2980b9',
+                  color: '#fff',
+                  fontSize: '15px',
+                  fontWeight: '900',
+                  letterSpacing: '1px',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+                  cursor: 'pointer',
+                }}
+              >
+                EXIT LOBBY
+              </button>
+            )}
           </div>
         </div>
 
@@ -245,16 +292,19 @@ export default function LobbyRoom({ lobbyState, lobbyUserId, onStart, onExitLobb
               disabled={!draft.trim()}
               style={{
                 padding: '10px 16px',
-                borderRadius: '6px',
+                borderRadius: '8px',
                 border: 'none',
                 background: draft.trim() ? '#2980b9' : '#333',
                 color: draft.trim() ? '#fff' : '#666',
                 fontSize: '14px',
+                fontWeight: '900',
+                letterSpacing: '1px',
+                boxShadow: draft.trim() ? '0 4px 12px rgba(0,0,0,0.4)' : 'none',
                 cursor: draft.trim() ? 'pointer' : 'default',
                 flexShrink: 0,
               }}
             >
-              Send
+              SEND
             </button>
           </div>
         </div>

@@ -6,18 +6,19 @@ type Props = {
   myPlayerNumber: number;
   myPlayerName: string;
   myNumCards: number;
+  myWinPosition: number | null;
   activePlayerNumber: number;
   isMobile: boolean;
 };
 
-const PlayerList = ({ opponents, myPlayerNumber, myPlayerName, myNumCards, activePlayerNumber, isMobile }: Props) => {
+const PlayerList = ({ opponents, myPlayerNumber, myPlayerName, myNumCards, myWinPosition, activePlayerNumber, isMobile }: Props) => {
   const totalPlayers = opponents.length + 1;
   const compact = isMobile && totalPlayers >= 4;
 
   const playerCards = Array.from({ length: totalPlayers }, (_, i) => {
     const playerNumber = i + 1;
     if (playerNumber === myPlayerNumber) {
-      return { playerNumber, playerName: myPlayerName, numCards: myNumCards, isDisconnected: false };
+      return { playerNumber, playerName: myPlayerName, numCards: myNumCards, isDisconnected: false, winPosition: myWinPosition };
     }
     return opponents.find((o) => o.playerNumber === playerNumber) ?? null;
   }).filter((p) => p !== null);
