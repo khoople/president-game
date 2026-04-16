@@ -24,6 +24,48 @@ export interface LobbyState {
   status: 'waiting' | 'in-game' | 'closed';
 }
 
+// Lobby response types
+
+export interface StartLobbyResponse {
+  lobbyId?: string;
+  lobbyUserId?: string;
+  error?: string;
+}
+
+export interface JoinLobbyResponse {
+  lobbyUserId?: string;
+  error?: string;
+}
+
+export interface ExitLobbyResponse extends Partial<LobbyState> {
+  error?: string;
+}
+
+export interface SendMessageResponse extends Partial<LobbyState> {
+  error?: string;
+}
+
+export interface UpdateLobbyResponse extends Partial<LobbyState> {
+  error?: string;
+}
+
+// Game response types
+
+export interface StartGameResponse {
+  gameId: string;
+}
+
+export interface JoinGameResponse {
+  playerId: string | null;
+}
+
+export interface PlayResponse {
+  isValid: boolean;
+  invalidCode?: string;
+  invalidMessageShort?: string;
+  invalidMessageLong?: string;
+}
+
 // Player state types
 
 export interface OpponentPlayerState {

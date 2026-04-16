@@ -1,4 +1,4 @@
-import { LobbyHost, LobbyNotFoundError, LobbyForbiddenError } from './president-host/lobby';
+import { LobbyHost } from './president-host/lobby';
 import type { LobbyState } from './president-host/types';
 import { BaseDurableObject } from './abstract-do';
 
@@ -91,25 +91,9 @@ export class LobbyDurableObject extends BaseDurableObject<LobbySessionAttachment
 
   private async handleJoin(request: Request): Promise<Response> {
     const { lobbyId, userName } = await request.json<{ lobbyId: string; userName: string }>();
-    try {
-      const result = await this.lobbyHost.joinLobby(lobbyId, userName);
-      await this.resetAlarm();
-      return Response.json(result);
-    } catch (e) {
-      if (e instanceof LobbyNotFoundError) {
-        return new Response(JSON.stringify({ error: 'Lobby not found.' }), {
-          status: 404,
-          headers: { 'Content-Type': 'application/json' },
-        });
-      }
-      if (e instanceof LobbyForbiddenError) {
-        return new Response(JSON.stringify({ error: 'Game is already in progress.' }), {
-          status: 403,
-          headers: { 'Content-Type': 'application/json' },
-        });
-      }
-      throw e;
-    }
+    const result = await this.lobbyHost.joinLobby(lobbyId, userName);
+    await this.resetAlarm();
+    return Response.json(result);
   }
 
   private async handleExit(request: Request): Promise<Response> {
@@ -138,19 +122,9 @@ export class LobbyDurableObject extends BaseDurableObject<LobbySessionAttachment
       status?: LobbyState['status'];
       gameId?: string;
     }>();
-    try {
-      const result = await this.lobbyHost.updateLobby(lobbyId, lobbyUserId, { status, gameId });
-      await this.resetAlarm();
-      return Response.json(result);
-    } catch (e) {
-      if (e instanceof LobbyForbiddenError) {
-        return new Response(JSON.stringify({ error: e.message }), {
-          status: 403,
-          headers: { 'Content-Type': 'application/json' },
-        });
-      }
-      throw e;
-    }
+    const result = await this.lobbyHost.updateLobby(lobbyId, lobbyUserId, { status, gameId });
+    await this.resetAlarm();
+    return Response.json(result);
   }
 
   // WebSocket connection for a client to receive LobbyState updates.

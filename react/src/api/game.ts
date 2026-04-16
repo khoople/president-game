@@ -1,4 +1,7 @@
 import API_BASE_URL from '../config';
+import type { StartGameResponse, JoinGameResponse, PlayResponse } from '../president-client/types';
+export type { StartGameResponse, JoinGameResponse, PlayResponse } from '../president-client/types';
+import type { LobbyUser } from '../president-client/types';
 
 async function postJson<T>(path: string, body: unknown): Promise<T> {
   const res = await fetch(`${API_BASE_URL}${path}`, {
@@ -10,11 +13,11 @@ async function postJson<T>(path: string, body: unknown): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-export async function startGame(lobbyId: string, lobbyUsers: { id: string; name: string; isHost: boolean }[]): Promise<{ gameId: string }> {
+export async function startGame(lobbyId: string, lobbyUsers: LobbyUser[]): Promise<StartGameResponse> {
   return postJson('/game/start', { lobbyId, lobbyUsers });
 }
 
-export async function joinGame(gameId: string, lobbyUserId: string): Promise<{ playerId: string | null }> {
+export async function joinGame(gameId: string, lobbyUserId: string): Promise<JoinGameResponse> {
   return postJson('/game/join', { gameId, lobbyUserId });
 }
 
@@ -23,11 +26,11 @@ export function openPlayerStateSocket(gameId: string, playerId: string): WebSock
   return new WebSocket(`${wsBase}/game/player-state?gameId=${gameId}&playerId=${playerId}`);
 }
 
-export async function playCards(gameId: string, playerId: string, chosenHand: string[]): Promise<{ isValid: boolean; invalidMessageLong?: string }> {
+export async function playCards(gameId: string, playerId: string, chosenHand: string[]): Promise<PlayResponse> {
   return postJson('/game/play', { gameId, playerId, action: 'PLAY', chosenHand });
 }
 
-export async function playPass(gameId: string, playerId: string): Promise<{ isValid: boolean; invalidMessageLong?: string }> {
+export async function playPass(gameId: string, playerId: string): Promise<PlayResponse> {
   return postJson('/game/play', { gameId, playerId, action: 'PASS' });
 }
 

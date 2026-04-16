@@ -1,13 +1,23 @@
-import type { LobbyState, GetLobbyStateInterface, SaveLobbyStateInterface, SendLobbyStateInterface } from './types';
+import type {
+  LobbyState,
+  GetLobbyState,
+  SaveLobbyState,
+  SendLobbyState,
+  StartLobbyResponse,
+  JoinLobbyResponse,
+  ExitLobbyResponse,
+  SendMessageResponse,
+  UpdateLobbyResponse,
+} from './types';
 
 export class LobbyHost {
   constructor(
-    private getLobbyState: GetLobbyStateInterface,
-    private saveLobbyState: SaveLobbyStateInterface,
-    private sendLobbyState: SendLobbyStateInterface,
+    private getLobbyState: GetLobbyState,
+    private saveLobbyState: SaveLobbyState,
+    private sendLobbyState: SendLobbyState,
   ) {}
 
-  async startLobby(userName: string): Promise<{ lobbyId: string; lobbyUserId: string }> {
+  async startLobby(userName: string): Promise<StartLobbyResponse> {
     const lobbyId = Array.from({ length: 6 }, () => {
       const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
       return chars[Math.floor(Math.random() * chars.length)];
@@ -22,12 +32,12 @@ export class LobbyHost {
     return { lobbyId, lobbyUserId };
   }
 
-  async joinLobby(lobbyId: string, userName: string): Promise<{ lobbyUserId: string }> {
+  async joinLobby(lobbyId: string, userName: string): Promise<JoinLobbyResponse> {
     const lobbyState = await this.getLobbyState(lobbyId);
     if (!lobbyState || lobbyState.status === 'closed') {
-      throw new LobbyNotFoundError(`Lobby '${lobbyId}' not found.`);
+      return { error: `Lobby '${lobbyId}' not found.` };
     } else if (lobbyState.status === 'in-game') {
-      throw new LobbyForbiddenError(`Game is already in progress.`);
+      return { error: 'Game is already in progress.' };
     }
 
     const lobbyUserId = crypto.randomUUID();
@@ -39,9 +49,9 @@ export class LobbyHost {
     return { lobbyUserId };
   }
 
-  async exitLobby(lobbyId: string, lobbyUserId: string): Promise<LobbyState> {
+  async exitLobby(lobbyId: string, lobbyUserId: string): Promise<ExitLobbyResponse> {
     const lobbyState = await this.getLobbyState(lobbyId);
-    if (!lobbyState) throw new LobbyNotFoundError(`Lobby '${lobbyId}' not found.`);
+    if (!lobbyState) return { error: `Lobby '${lobbyId}' not found.` };
 
     lobbyState.users = lobbyState.users.filter((u) => u.id !== lobbyUserId);
     await this.saveLobbyState(lobbyId, lobbyState);
@@ -50,9 +60,9 @@ export class LobbyHost {
     return lobbyState;
   }
 
-  async sendMessage(lobbyId: string, lobbyUserId: string, userName: string, text: string): Promise<LobbyState> {
+  async sendMessage(lobbyId: string, lobbyUserId: string, userName: string, text: string): Promise<SendMessageResponse> {
     const lobbyState = await this.getLobbyState(lobbyId);
-    if (!lobbyState) throw new LobbyNotFoundError(`Lobby '${lobbyId}' not found.`);
+    if (!lobbyState) return { error: `Lobby '${lobbyId}' not found.` };
 
     lobbyState.messages.push({
       id: crypto.randomUUID(),
@@ -83,13 +93,13 @@ export class LobbyHost {
     lobbyId: string,
     lobbyUserId: string,
     updates: { status?: LobbyState['status']; gameId?: string },
-  ): Promise<LobbyState> {
+  ): Promise<UpdateLobbyResponse> {
     const lobbyState = await this.getLobbyState(lobbyId);
-    if (!lobbyState) throw new LobbyNotFoundError(`Lobby '${lobbyId}' not found.`);
+    if (!lobbyState) return { error: `Lobby '${lobbyId}' not found.` };
 
     const requestingUser = lobbyState.users.find((u) => u.id === lobbyUserId);
     if (!requestingUser?.isHost) {
-      throw new LobbyForbiddenError('Only the host can update the lobby.');
+      return { error: 'Only the host can update the lobby.' };
     }
 
     if (updates.status !== undefined) lobbyState.status = updates.status;
@@ -100,19 +110,5 @@ export class LobbyHost {
     await this.sendLobbyState(lobbyId, lobbyState);
 
     return lobbyState;
-  }
-}
-
-export class LobbyNotFoundError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = 'LobbyNotFoundError';
-  }
-}
-
-export class LobbyForbiddenError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = 'LobbyForbiddenError';
   }
 }

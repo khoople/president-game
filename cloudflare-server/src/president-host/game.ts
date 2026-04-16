@@ -3,30 +3,30 @@ import { applyPlay, advanceTurn } from './play';
 import { derivePlayerState } from './player-state';
 import type {
   LobbyUser,
-  SendPlayerStateInterface,
-  GetGameStateInterface,
-  SaveGameStateInterface,
-  PlayResponseInterface,
-  StartGameResponseInterface,
-  JoinGameResponseInterface,
+  SendPlayerState,
+  GetGameState,
+  SaveGameState,
+  PlayResponse,
+  StartGameResponse,
+  JoinGameResponse,
   PlayerState,
   Play,
 } from './types';
 
 export default class PresidentGameHost {
   constructor(
-    private sendPlayerState: SendPlayerStateInterface,
-    private getGameState: GetGameStateInterface,
-    private saveGameState: SaveGameStateInterface
+    private sendPlayerState: SendPlayerState,
+    private getGameState: GetGameState,
+    private saveGameState: SaveGameState
   ) {}
 
-  async startGame(lobbyId: string, lobbyUsers: LobbyUser[]): Promise<StartGameResponseInterface> {
+  async startGame(lobbyId: string, lobbyUsers: LobbyUser[]): Promise<StartGameResponse> {
     const gameState = createGame(lobbyId, lobbyUsers);
     await this.saveGameState(gameState.id, gameState);
     return { gameId: gameState.id };
   }
 
-  async joinGame(gameId: string, lobbyUserId: string): Promise<JoinGameResponseInterface> {
+  async joinGame(gameId: string, lobbyUserId: string): Promise<JoinGameResponse> {
     const gameState = await this.getGameState(gameId);
     if (!gameState) {
       throw new Error('Game not found');
@@ -36,7 +36,7 @@ export default class PresidentGameHost {
     return { playerId };
   }
 
-  async makePlay(play: Play): Promise<PlayResponseInterface> {
+  async makePlay(play: Play): Promise<PlayResponse> {
     const gameState = await this.getGameState(play.gameId);
     if (!gameState) {
       throw new Error('Game not found');

@@ -6,8 +6,8 @@ type Props = OpponentPlayerState & { isActive: boolean; isMe?: boolean; compact?
 
 const Player = ({ playerName, numCards, isActive, isDisconnected, winPosition, isMe = false, compact = false }: Props) => {
   const finished = winPosition !== null;
-  const bgColor = finished ? '#1a4a8a' : isDisconnected ? '#555' : isActive ? '#a01020' : '#6b0f1a';
-  const borderColor = finished ? '#5a9fd4' : isActive ? '#f9ca24' : isDisconnected ? '#888' : '#3d0a10';
+  const bgColor = finished ? '#1a4a8a' : isActive ? '#a01020' : '#6b0f1a';
+  const borderColor = finished ? '#5a9fd4' : isActive ? '#f9ca24' : '#3d0a10';
   const { width, height } = compact ? CARD_DIMS.small : CARD_DIMS.large;
 
   const card = (
@@ -35,7 +35,7 @@ const Player = ({ playerName, numCards, isActive, isDisconnected, winPosition, i
     return (
       <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
         {card}
-        <span style={{ color: isDisconnected ? '#666' : isMe ? '#4cff72' : '#fff', fontStyle: isDisconnected ? 'italic' : 'normal', fontSize: '12px', fontWeight: 'bold', textShadow: '0 1px 2px rgba(0,0,0,0.6)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        <span style={{ color: isDisconnected ? '#666' : isMe ? '#4cff72' : '#fff', fontSize: '12px', fontWeight: 'bold', textShadow: '0 1px 2px rgba(0,0,0,0.6)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {playerName}
         </span>
       </div>
@@ -44,7 +44,7 @@ const Player = ({ playerName, numCards, isActive, isDisconnected, winPosition, i
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
-      <span style={{ color: isMe ? '#4cff72' : 'white', fontSize: '13px', fontWeight: 'bold', textShadow: '0 1px 2px rgba(0,0,0,0.6)' }}>
+      <span style={{ color: isDisconnected ? '#666' : isMe ? '#4cff72' : 'white', fontSize: '13px', fontWeight: 'bold', textShadow: '0 1px 2px rgba(0,0,0,0.6)' }}>
         {playerName}
       </span>
       {card}

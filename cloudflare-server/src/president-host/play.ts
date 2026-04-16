@@ -1,10 +1,10 @@
-import { GameState, Play, PlayResponseInterface, Player } from './types';
+import { GameState, Play, PlayResponse, Player } from './types';
 import { rankOf, rankIndex } from './card';
 
 /**
  * Make a play. Determines whether play is valid and, if so, applies it to the game state.
  */
-export function applyPlay(play: Play, gameState: GameState): PlayResponseInterface {
+export function applyPlay(play: Play, gameState: GameState): PlayResponse {
   const { chosenHand, playerId } = play;
 
   const player = gameState.players.find((p) => p.playerId === playerId);

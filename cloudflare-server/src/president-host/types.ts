@@ -22,42 +22,65 @@ export interface LobbyState {
   status: 'waiting' | 'in-game' | 'closed';
 }
 
-export interface GetLobbyStateInterface {
+export interface GetLobbyState {
   (lobbyId: string): Promise<LobbyState | null>;
 }
 
-export interface SaveLobbyStateInterface {
+export interface SaveLobbyState {
   (lobbyId: string, lobbyState: LobbyState): Promise<void>;
 }
 
-export interface SendLobbyStateInterface {
+export interface SendLobbyState {
   (lobbyId: string, lobbyState: LobbyState): Promise<void>;
 }
 
-export interface SendPlayerStateInterface {
+export interface SendPlayerState {
   (playerId: string, state: PlayerState): Promise<void>;
 }
 
-export interface GetGameStateInterface {
+export interface GetGameState {
   (gameId: string): Promise<GameState | null>;
 }
 
-export interface SaveGameStateInterface {
+export interface SaveGameState {
   (gameId: string, gameState: GameState): Promise<void>;
 }
 
-export interface PlayResponseInterface {
+export interface StartLobbyResponse {
+  lobbyId?: string;
+  lobbyUserId?: string;
+  error?: string;
+}
+
+export interface JoinLobbyResponse {
+  lobbyUserId?: string;
+  error?: string;
+}
+
+export interface ExitLobbyResponse extends Partial<LobbyState> {
+  error?: string;
+}
+
+export interface SendMessageResponse extends Partial<LobbyState> {
+  error?: string;
+}
+
+export interface UpdateLobbyResponse extends Partial<LobbyState> {
+  error?: string;
+}
+
+export interface PlayResponse {
   isValid: boolean;
   invalidCode?: string;
   invalidMessageShort?: string;
   invalidMessageLong?: string;
 }
 
-export interface StartGameResponseInterface {
+export interface StartGameResponse {
   gameId: string;
 }
 
-export interface JoinGameResponseInterface {
+export interface JoinGameResponse {
   playerId: string | null;
 }
 
