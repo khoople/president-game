@@ -42,7 +42,7 @@ export function applyPlay(play: Play, gameState: GameState): PlayResponse {
     gameState.discard = [chosenHand];
     gameState.activeHand = [];
     gameState.activeHandPlayedBy = null;
-    assignWinPosition(player, gameState);
+    checkIfPlayerWon(player, gameState);
     checkGameOver(gameState);
     // If the player ran out of cards, they can't take another turn — skip to the next player.
     if (player.hand.length === 0) {
@@ -60,7 +60,7 @@ export function applyPlay(play: Play, gameState: GameState): PlayResponse {
     ? gameState.discard[gameState.discard.length - 1]
     : gameState.activeHand;
 
-  if (!chosenIsFour && !activeIsEmpty) {
+  if (!chosenIsFour && !activeIsEmpty && rankOf(handToBeat[0]) !== '4') {
     if (chosenHand.length < handToBeat.length) {
       return { isValid: false, invalidCode: 'TOO_FEW_CARDS', invalidMessageShort: 'Too few cards', invalidMessageLong: `You must play at least ${handToBeat.length} card(s) to match the active hand.` };
     }
@@ -83,14 +83,15 @@ export function applyPlay(play: Play, gameState: GameState): PlayResponse {
   advanceTurn(gameState);
 
   // If the same rank is played on top of an existing hand, the next player is skipped.
-  if (!activeIsEmpty && rankIndex(chosenHand[0]) === rankIndex(handToBeat[0])) {
+  // 4s are wild and don't count as a rank match for this purpose.
+  if (!activeIsEmpty && !chosenIsFour && rankOf(handToBeat[0]) !== '4' && rankIndex(chosenHand[0]) === rankIndex(handToBeat[0]) && chosenHand.length === handToBeat.length) {
     advanceTurn(gameState);
   }
 
   gameState.activeHand = chosenHand;
   gameState.activeHandPlayedBy = player.playerNumber;
   removeFromHand(player.hand, chosenHand);
-  assignWinPosition(player, gameState);
+  checkIfPlayerWon(player, gameState);
   checkGameOver(gameState);
 
   return { isValid: true };
@@ -131,7 +132,7 @@ function removeFromHand(hand: string[], cards: string[]): void {
   }
 }
 
-function assignWinPosition(player: Player, gameState: GameState): void {
+function checkIfPlayerWon(player: Player, gameState: GameState): void {
   if (player.hand.length === 0 && player.winPosition === null) {
     player.winPosition = gameState.players.filter((p) => p.winPosition !== null).length + 1;
   }
