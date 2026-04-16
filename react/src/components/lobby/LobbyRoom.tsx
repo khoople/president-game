@@ -29,7 +29,7 @@ export default function LobbyRoom({ lobbyState, lobbyUserId, onStart, onEndGame,
   }, []);
 
   const handleCopyLink = useCallback(() => {
-    const url = `${window.location.origin}${window.location.pathname}?lobbyId=${lobbyState.lobbyId}`;
+    const url = `${window.location.origin}${window.location.pathname}?j=${lobbyState.lobbyId}`;
     navigator.clipboard.writeText(url).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);

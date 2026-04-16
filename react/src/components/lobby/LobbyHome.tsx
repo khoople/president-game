@@ -10,14 +10,14 @@ type Props = {
 export default function LobbyHome({ onJoinLobby, onRejoinLobby, onStartNewLobby }: Props) {
   const [name, setName] = useState(() => sessionStorage.getItem('userName') ?? '');
   const [lobbyId, setLobbyId] = useState(() => {
-    const param = new URLSearchParams(window.location.search).get('lobbyId');
+    const param = new URLSearchParams(window.location.search).get('j');
     return param ? param.toUpperCase().slice(0, 6) : '';
   });
   const [nameError, setNameError] = useState('');
   const [lobbyIdError, setLobbyIdError] = useState('');
 
   useEffect(() => {
-    const param = new URLSearchParams(window.location.search).get('lobbyId');
+    const param = new URLSearchParams(window.location.search).get('j');
     if (param) {
       window.history.replaceState({}, '', window.location.pathname);
     }

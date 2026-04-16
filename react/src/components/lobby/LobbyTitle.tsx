@@ -9,14 +9,14 @@ export default function LobbyTitle() {
         fontWeight: '400',
         letterSpacing: '2px',
       }}>
-        President
+        {import.meta.env.VITE_APP_TITLE}
       </h1>
       <p style={{
         color: '#d4f0d4',
         margin: '6px 0 16px',
         fontSize: '16px',
       }}>
-        A multiplayer drinking card game
+        {import.meta.env.VITE_APP_SUBTITLE}
       </p>
     </div>
   );
