@@ -25,6 +25,8 @@ function App() {
   const [message, setMessage] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
   const [lobbyUserId, setLobbyUserId] = useState<string>('');
+  const [chatPreview, setChatPreview] = useState<{ name: string; text: string } | null>(null);
+  const lastMessageCountRef = useRef<number>(0);
   const lobbyIdRef = useRef<string>('');
   const lobbyUserIdRef = useRef<string>('');
   const userNameRef = useRef<string>('');
@@ -49,6 +51,8 @@ function App() {
     );
 
     await updateLobby(lobbyIdRef.current, lobbyUserIdRef.current, { gameId, status: 'in-game' });
+    lastMessageCountRef.current = lobbyState.messages.length;
+    setChatPreview(null);
     setScreen('game');
   };
 
@@ -131,6 +135,8 @@ function App() {
       (data) => setPlayerState(JSON.parse(data) as PlayerState),
     );
 
+    lastMessageCountRef.current = lobbyState?.messages.length ?? 0;
+    setChatPreview(null);
     // Show the game screen. There may be a delay before we receive the first player state update but it will populate once we do.
     setScreen('game');
   };
@@ -160,6 +166,15 @@ function App() {
     if (playerIdRef.current && newLobbyState.status === 'closed') {
       handleQuitGame();
     }
+
+    if (playerIdRef.current
+      && newLobbyState.messages.length > lastMessageCountRef.current
+      && newLobbyState.messages[newLobbyState.messages.length - 1].lobbyUserId !== lobbyUserIdRef.current
+    ) {
+      const latest = newLobbyState.messages[newLobbyState.messages.length - 1];
+      setChatPreview({ name: latest.userName, text: latest.text });
+    }
+    lastMessageCountRef.current = newLobbyState.messages.length;
   };
 
   useEffect(() => {
@@ -226,12 +241,21 @@ function App() {
     if (!playerState) return null;
     return (
       <div style={{ width: '100vw', height: '100dvh', background: '#2d6a2d', padding: '8px', paddingTop: 0, paddingBottom: 'max(4px, env(safe-area-inset-bottom))', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', background: 'rgba(0,0,0,0.35)', marginLeft: '-8px', marginRight: '-8px', paddingLeft: '8px', paddingRight: '8px', paddingTop: '4px', paddingBottom: '4px', flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', background: 'rgba(0,0,0,0.35)', marginLeft: '-8px', marginRight: '-8px', paddingLeft: '8px', paddingRight: '8px', paddingTop: '4px', paddingBottom: '4px', flexShrink: 0, gap: '8px' }}>
+          {chatPreview && (
+            <div
+              onClick={() => { setScreen('lobby-room'); setChatPreview(null); }}
+              style={{ flex: 1, minWidth: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', overflow: 'hidden' }}
+            >
+              <span style={{ fontSize: '10px', fontWeight: 'bold', color: '#3498db', whiteSpace: 'nowrap', flexShrink: 0 }}>{chatPreview.name}:</span>
+              <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.75)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{chatPreview.text}</span>
+            </div>
+          )}
           <button
-            onClick={() => setScreen('lobby-room')}
-            style={{ padding: '3px 14px', fontSize: '11px', fontWeight: 'bold', letterSpacing: '1px', color: '#fff', background: 'linear-gradient(to bottom, #2d6a2d, #1a3d1a)', border: '1px solid #0f240f', borderRadius: '4px', cursor: 'pointer', boxShadow: '0 1px 0 rgba(255,255,255,0.12) inset, 1px 1px 3px rgba(0,0,0,0.8)' }}
+            onClick={() => { setScreen('lobby-room'); setChatPreview(null); }}
+            style={{ padding: '3px 14px', fontSize: '11px', fontWeight: 'bold', letterSpacing: '1px', color: '#fff', background: 'linear-gradient(to bottom, #2d6a2d, #1a3d1a)', border: '1px solid #0f240f', borderRadius: '4px', cursor: 'pointer', boxShadow: '0 1px 0 rgba(255,255,255,0.12) inset, 1px 1px 3px rgba(0,0,0,0.8)', flexShrink: 0 }}
           >
-            MENU
+            LOBBY
           </button>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>

@@ -9,7 +9,7 @@ const PlayButton = ({ onClick, disabled }: PlayButtonProps) => {
       onClick={onClick}
       disabled={disabled}
       style={{
-        backgroundColor: disabled ? '#777' : '#cc2200',
+        backgroundColor: disabled ? '#777' : '#3ab600',
         color: 'white',
         border: 'none',
         borderRadius: '8px',
