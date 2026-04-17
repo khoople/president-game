@@ -4,10 +4,10 @@ import { ordinal } from '../../president-client/ordinals';
 
 type Props = OpponentPlayerState & { isActive: boolean; isMe?: boolean; compact?: boolean };
 
-const Player = ({ playerName, numCards, isActive, isDisconnected, winPosition, isMe = false, compact = false }: Props) => {
+const Player = ({ playerName, numCards, isActive, isDisconnected, winPosition, isDrinking, isMe = false, compact = false }: Props) => {
   const finished = winPosition !== null;
-  const bgColor = finished ? '#1a4a8a' : isActive ? '#a01020' : '#6b0f1a';
-  const borderColor = finished ? '#5a9fd4' : isActive ? '#f9ca24' : '#3d0a10';
+  const bgColor = finished ? '#1a4a8a' : isDrinking ? '#c8920a' : isActive ? '#a01020' : '#6b0f1a';
+  const borderColor = finished ? '#5a9fd4' : isDrinking ? '#8a6000' : isActive ? '#f9ca24' : '#3d0a10';
   const { width, height } = compact ? CARD_DIMS.small : CARD_DIMS.large;
 
   const card = (

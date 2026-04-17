@@ -34,6 +34,10 @@ export async function playPass(gameId: string, playerId: string): Promise<PlayRe
   return postJson('/game/play', { gameId, playerId, action: 'PASS' });
 }
 
+export async function playDrink(gameId: string, playerId: string): Promise<PlayResponse> {
+  return postJson('/game/play', { gameId, playerId, action: 'DRINK' });
+}
+
 export async function exitGame(gameId: string, playerId: string): Promise<void> {
   await postJson('/game/exit', { gameId, playerId });
 }

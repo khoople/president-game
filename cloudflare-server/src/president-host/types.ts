@@ -69,6 +69,8 @@ export interface UpdateLobbyResponse extends Partial<LobbyState> {
   error?: string;
 }
 
+export type DrinkingReason = 'passed' | 'social' | 'skipped';
+
 export interface PlayResponse {
   isValid: boolean;
   invalidCode?: string;
@@ -94,6 +96,8 @@ export interface Player {
   hand: string[];
   isDisconnected: boolean;
   winPosition: number | null;
+  isDrinking: boolean;
+  drinkingReason: DrinkingReason | null;
 }
 
 export interface GameState {
@@ -113,6 +117,7 @@ export interface Opponent {
   numCards: number;
   isDisconnected: boolean;
   winPosition: number | null;
+  isDrinking: boolean;
 }
 
 export interface PlayerState {
@@ -127,6 +132,8 @@ export interface PlayerState {
   activePlayerNumber: number;
   playerWinPosition: number | null;
   gameStatus: 'PLAYING' | 'GAME_OVER';
+  isDrinking: boolean;
+  drinkingReason: DrinkingReason | null;
 }
 
 export interface Play {

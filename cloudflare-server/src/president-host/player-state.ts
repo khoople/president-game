@@ -19,6 +19,7 @@ export function derivePlayerState(playerId: string, gameState: GameState): Playe
       numCards: p.hand.length,
       isDisconnected: p.isDisconnected,
       winPosition: p.winPosition,
+      isDrinking: p.isDrinking,
     }));
 
   return {
@@ -33,5 +34,7 @@ export function derivePlayerState(playerId: string, gameState: GameState): Playe
     activePlayerNumber: gameState.activePlayerNumber,
     playerWinPosition: player.winPosition,
     gameStatus: gameState.status,
+    isDrinking: player.isDrinking,
+    drinkingReason: player.drinkingReason,
   };
 }

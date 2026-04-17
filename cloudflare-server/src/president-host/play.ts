@@ -12,6 +12,12 @@ export function applyPlay(play: Play, gameState: GameState): PlayResponse {
     throw new Error('Player not found');
   }
 
+  if (play.action === 'DRINK') {
+    player.isDrinking = false;
+    player.drinkingReason = null;
+    return { isValid: true };
+  }
+
   if (player.playerNumber !== gameState.activePlayerNumber) {
     return { isValid: false, invalidCode: 'NOT_YOUR_TURN', invalidMessageShort: 'Not your turn', invalidMessageLong: 'It is not your turn to play.' };
   }
@@ -19,6 +25,8 @@ export function applyPlay(play: Play, gameState: GameState): PlayResponse {
   // Player passes, goes to next player. If all players pass back to the player who played the active hand,
   // the active hand is cleared and original player plays another hand.
   if (play.action === 'PASS') {
+    player.isDrinking = true;
+    player.drinkingReason = 'passed';
     advanceTurn(gameState);
     return { isValid: true };
   }
@@ -52,7 +60,14 @@ export function applyPlay(play: Play, gameState: GameState): PlayResponse {
   }
 
   // 4's are wild but do not clear the deck, previous hand still active.
+  // Playing a 4 is social — everyone drinks.
   const chosenIsFour = chosenRank === '4';
+  if (chosenIsFour) {
+    for (const p of gameState.players) {
+      p.isDrinking = true;
+      p.drinkingReason = 'social';
+    }
+  }
 
   // When the active hand is a 4, the hand to beat is the last non-4 hand in discard
   // 4s are always unshifted to the front of discard, so non-4 hands stay at the back.
@@ -85,6 +100,11 @@ export function applyPlay(play: Play, gameState: GameState): PlayResponse {
   // If the same rank is played on top of an existing hand, the next player is skipped.
   // 4s are wild and don't count as a rank match for this purpose.
   if (!activeIsEmpty && !chosenIsFour && rankOf(handToBeat[0]) !== '4' && rankIndex(chosenHand[0]) === rankIndex(handToBeat[0]) && chosenHand.length === handToBeat.length) {
+    const skippedPlayer = gameState.players.find((p) => p.playerNumber === gameState.activePlayerNumber);
+    if (skippedPlayer) {
+      skippedPlayer.isDrinking = true;
+      skippedPlayer.drinkingReason = 'skipped';
+    }
     advanceTurn(gameState);
   }
 

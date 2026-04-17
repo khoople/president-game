@@ -68,12 +68,15 @@ export interface PlayResponse {
 
 // Player state types
 
+export type DrinkingReason = 'passed' | 'social' | 'skipped';
+
 export interface OpponentPlayerState {
   playerNumber: number;
   playerName: string;
   numCards: number;
   isDisconnected: boolean;
   winPosition: number | null;
+  isDrinking: boolean;
 }
 
 export interface PlayerState {
@@ -88,4 +91,6 @@ export interface PlayerState {
   activePlayerNumber: number;
   playerWinPosition: number | null;
   gameStatus: 'PLAYING' | 'GAME_OVER';
+  isDrinking: boolean;
+  drinkingReason: DrinkingReason | null;
 }

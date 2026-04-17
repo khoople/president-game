@@ -25,6 +25,8 @@ export function createGame(lobbyId: string, lobbyUsers: LobbyUser[]): GameState 
       isDisconnected: true,
       hand: [],
       winPosition: null,
+      isDrinking: false,
+      drinkingReason: null,
     });
   }
 

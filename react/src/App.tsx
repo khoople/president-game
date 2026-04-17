@@ -5,17 +5,18 @@ import PlayButton from './components/game/PlayButton';
 import PassButton from './components/game/PassButton';
 import Turn from './components/game/Turn';
 import PlayerList from './components/game/PlayerList';
-import { startGame, joinGame, openPlayerStateSocket, playCards, playPass, exitGame } from './api/game';
+import { startGame, joinGame, openPlayerStateSocket, playCards, playPass, playDrink, exitGame } from './api/game';
 import { startLobby, joinLobby, exitLobby, updateLobby, openLobbyStateSocket, sendLobbyMessage } from './api/lobby';
-import type { LobbyState, PlayerState } from './president-client/types';
+import type { DrinkingReason, LobbyState, PlayerState } from './president-client/types';
 import { sortHand } from './president-client/card';
 import MessageDisplay from './components/game/MessageDisplay';
+import Drink from './components/game/Drink';
 import LobbyHome from './components/lobby/LobbyHome';
 import LobbyRoom from './components/lobby/LobbyRoom';
 
 import { getSocketHandler, type SocketHandler } from './api/socket-handler';
 
-type Screen = 'home' | 'lobby-room' | 'game';
+type Screen = 'home' | 'lobby-room' | 'game' | 'drink';
 
 function App() {
   const [screen, setScreen] = useState<Screen>('home');
@@ -26,6 +27,7 @@ function App() {
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
   const [lobbyUserId, setLobbyUserId] = useState<string>('');
   const [chatPreview, setChatPreview] = useState<{ name: string; text: string } | null>(null);
+  const [drinkingReason, setDrinkingReason] = useState<DrinkingReason | null>(null);
   const lastMessageCountRef = useRef<number>(0);
   const lobbyIdRef = useRef<string>('');
   const lobbyUserIdRef = useRef<string>('');
@@ -187,6 +189,13 @@ function App() {
     };
   }, []);
 
+  useEffect(() => {
+    if (playerState?.isDrinking && playerState.drinkingReason && screen !== 'drink') {
+      setDrinkingReason(playerState.drinkingReason);
+      setScreen('drink');
+    }
+  }, [playerState?.isDrinking, playerState?.drinkingReason]);
+
   const handleCardClick = (code: string) => {
     setChosenHand((prev) =>
       prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code]
@@ -214,6 +223,11 @@ function App() {
     }
   };
 
+  const handleDoneDrinking = () => {
+    if (gameIdRef.current && playerIdRef.current) playDrink(gameIdRef.current, playerIdRef.current);
+    setScreen('game');
+  };
+
   // Home screen with options to create or join a lobby.
   if (screen === 'home') {
     return <LobbyHome onJoinLobby={handleJoinLobby} onRejoinLobby={handleRejoinLobby} onStartNewLobby={handleStartNewLobby} />;
@@ -235,6 +249,10 @@ function App() {
         }}
       />
     );
+  }
+
+  if (screen === 'drink') {
+    return <Drink onClose={handleDoneDrinking} drinkingReason={drinkingReason!} />;
   }
 
   if (screen === 'game') {
@@ -265,6 +283,7 @@ function App() {
             myPlayerName={playerState.playerName}
             myNumCards={playerState.playerHand.length}
             myWinPosition={playerState.playerWinPosition}
+            myIsDrinking={playerState.isDrinking}
             activePlayerNumber={playerState.activePlayerNumber}
             isMobile={isMobile}
           />
