@@ -1,16 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
-import PlayerHand from './components/game/PlayerHand';
-import GameCenter from './components/game/GameCenter';
-import PlayButton from './components/game/PlayButton';
-import PassButton from './components/game/PassButton';
-import Turn from './components/game/Turn';
-import PlayerList from './components/game/PlayerList';
 import { startGame, joinGame, openPlayerStateSocket, playCards, playPass, playDrink, exitGame } from './api/game';
 import { startLobby, joinLobby, exitLobby, updateLobby, openLobbyStateSocket, sendLobbyMessage } from './api/lobby';
 import type { DrinkingReason, LobbyState, PlayerState } from './president-client/types';
-import { sortHand } from './president-client/card';
-import MessageDisplay from './components/game/MessageDisplay';
 import Drink from './components/game/Drink';
+import GameScreen from './components/game/GameScreen';
 import LobbyHome from './components/lobby/LobbyHome';
 import LobbyRoom from './components/lobby/LobbyRoom';
 
@@ -22,8 +15,6 @@ function App() {
   const [screen, setScreen] = useState<Screen>('home');
   const [lobbyState, setLobbyState] = useState<LobbyState | null>(null);
   const [playerState, setPlayerState] = useState<PlayerState | null>(null);
-  const [chosenHand, setChosenHand] = useState<string[]>([]);
-  const [message, setMessage] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
   const [lobbyUserId, setLobbyUserId] = useState<string>('');
   const [chatPreview, setChatPreview] = useState<{ name: string; text: string } | null>(null);
@@ -196,31 +187,21 @@ function App() {
     }
   }, [playerState?.isDrinking, playerState?.drinkingReason]);
 
-  const handleCardClick = (code: string) => {
-    setChosenHand((prev) =>
-      prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code]
-    );
-  };
-
-  const handlePlay = async () => {
-    if (chosenHand.length === 0) return;
-    if (!gameIdRef.current || !playerIdRef.current) return;
-    setMessage(null);
+  const handlePlayCards = async (chosenHand: string[]): Promise<string | null> => {
+    if (!gameIdRef.current || !playerIdRef.current) return null;
     const result = await playCards(gameIdRef.current, playerIdRef.current, chosenHand);
-    if (!result.isValid) {
-      setMessage(result.invalidMessageLong ?? 'Invalid play.');
-      return;
-    }
-    setChosenHand([]);
+    return result.isValid ? null : (result.invalidMessageLong ?? 'Invalid play.');
   };
 
-  const handlePass = async () => {
-    if (!gameIdRef.current || !playerIdRef.current) return;
-    setMessage(null);
+  const handlePassCards = async (): Promise<string | null> => {
+    if (!gameIdRef.current || !playerIdRef.current) return null;
     const result = await playPass(gameIdRef.current, playerIdRef.current);
-    if (!result.isValid) {
-      setMessage(result.invalidMessageLong ?? 'Cannot pass.');
-    }
+    return result.isValid ? null : (result.invalidMessageLong ?? 'Cannot pass.');
+  };
+
+  const handleReturnToLobby = () => {
+    setChatPreview(null);
+    setScreen('lobby-room');
   };
 
   const handleDoneDrinking = () => {
@@ -258,67 +239,15 @@ function App() {
   if (screen === 'game') {
     if (!playerState) return null;
     return (
-      <div style={{ width: '100vw', height: '100dvh', background: '#2d6a2d', padding: '8px', paddingTop: 0, paddingBottom: 'max(4px, env(safe-area-inset-bottom))', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', background: 'rgba(0,0,0,0.35)', marginLeft: '-8px', marginRight: '-8px', paddingLeft: '8px', paddingRight: '8px', paddingTop: '4px', paddingBottom: '4px', flexShrink: 0, gap: '8px' }}>
-          {chatPreview && (
-            <div
-              onClick={() => { setScreen('lobby-room'); setChatPreview(null); }}
-              style={{ flex: 1, minWidth: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', overflow: 'hidden' }}
-            >
-              <span style={{ fontSize: '10px', fontWeight: 'bold', color: '#3498db', whiteSpace: 'nowrap', flexShrink: 0 }}>{chatPreview.name}:</span>
-              <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.75)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{chatPreview.text}</span>
-            </div>
-          )}
-          <button
-            onClick={() => { setScreen('lobby-room'); setChatPreview(null); }}
-            style={{ padding: '3px 14px', fontSize: '11px', fontWeight: 'bold', letterSpacing: '1px', color: '#fff', background: 'linear-gradient(to bottom, #2d6a2d, #1a3d1a)', border: '1px solid #0f240f', borderRadius: '4px', cursor: 'pointer', boxShadow: '0 1px 0 rgba(255,255,255,0.12) inset, 1px 1px 3px rgba(0,0,0,0.8)', flexShrink: 0 }}
-          >
-            LOBBY
-          </button>
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-          <PlayerList
-            opponents={playerState.opponents}
-            myPlayerNumber={playerState.playerNumber}
-            myPlayerName={playerState.playerName}
-            myNumCards={playerState.playerHand.length}
-            myWinPosition={playerState.playerWinPosition}
-            myIsDrinking={playerState.isDrinking}
-            activePlayerNumber={playerState.activePlayerNumber}
-            isMobile={isMobile}
-          />
-          <Turn
-            isMyTurn={playerState.playerNumber === playerState.activePlayerNumber}
-            activePlayerName={playerState.opponents.find((o) => o.playerNumber === playerState.activePlayerNumber)?.playerName ?? playerState.playerName}
-            myWinPosition={playerState.playerWinPosition}
-            gameStatus={playerState.gameStatus}
-          />
-        </div>
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <GameCenter activeHand={playerState.activeHand} discard={playerState.discard} />
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
-          <MessageDisplay message={message} />
-          <PlayerHand
-            cards={sortHand(playerState.playerHand)}
-            chosenCards={chosenHand}
-            onCardClick={handleCardClick}
-          />
-          {playerState.gameStatus === 'GAME_OVER' ? (
-            <button
-              onClick={handleQuitGame}
-              style={{ padding: '12px 32px', fontSize: '16px', fontWeight: '900', letterSpacing: '1px', background: '#c0392b', color: 'white', border: '2px solid #922b21', borderRadius: '8px', cursor: 'pointer', boxShadow: '2px 2px 6px rgba(0,0,0,0.4)' }}
-            >
-              EXIT GAME
-            </button>
-          ) : (
-            <div style={{ display: 'flex', gap: '12px' }}>
-              <PlayButton onClick={handlePlay} disabled={chosenHand.length === 0 || playerState.activePlayerNumber !== playerState.playerNumber} />
-              <PassButton onClick={handlePass} disabled={playerState.playerNumber !== playerState.activePlayerNumber || chosenHand.length > 0} />
-            </div>
-          )}
-        </div>
-      </div>
+      <GameScreen
+        playerState={playerState}
+        isMobile={isMobile}
+        chatPreview={chatPreview}
+        onReturnToLobby={handleReturnToLobby}
+        onPlay={handlePlayCards}
+        onPass={handlePassCards}
+        onQuit={handleQuitGame}
+      />
     );
   }
 }
