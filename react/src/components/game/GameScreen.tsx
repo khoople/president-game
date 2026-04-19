@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { PlayerState } from '../../president-client/types';
 import { sortHand } from '../../president-client/card';
 import PlayerHand from './PlayerHand';
@@ -22,6 +22,17 @@ type Props = {
 export default function GameScreen({ playerState, isMobile, chatPreview, onReturnToLobby, onPlay, onPass, onQuit }: Props) {
   const [chosenHand, setChosenHand] = useState<string[]>([]);
   const [message, setMessage] = useState<string | null>(null);
+  const prevActiveHandRef = useRef(playerState.activeHand);
+
+  useEffect(() => {
+    const prev = prevActiveHandRef.current;
+    const curr = playerState.activeHand;
+    const changed = curr.length !== prev.length || curr.some((c, i) => c !== prev[i]);
+    if (changed && curr.length > 0) {
+      new Audio('/sounds/card-play.mp3').play().catch(() => {});
+    }
+    prevActiveHandRef.current = curr;
+  }, [playerState.activeHand]);
 
   const handleCardClick = (code: string) => {
     setChosenHand((prev) =>

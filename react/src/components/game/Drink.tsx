@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { DrinkingReason } from '../../president-client/types';
 
 type Props = {
@@ -30,11 +30,24 @@ const BUBBLES = [
 export default function Drink({ onClose, drinkingReason }: Props) {
   const { title, subtitle } = DRINKING_TEXT[drinkingReason];
   const [done, setDone] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
+    const audio = new Audio('/sounds/chug-start.mp3');
+    audioRef.current = audio;
+    audio.play().catch(() => {});
     const t = setTimeout(() => setDone(true), 4400); // 600ms delay + ~3800ms drain
-    return () => clearTimeout(t);
+    return () => {
+      clearTimeout(t);
+      audio.pause();
+      audio.currentTime = 0;
+    };
   }, []);
+
+  const handleClose = () => {
+    audioRef.current?.pause();
+    onClose();
+  };
 
   return (
     <div style={{ width: '100vw', height: '100dvh', background: 'black', position: 'relative', overflow: 'hidden' }}>
@@ -106,7 +119,7 @@ export default function Drink({ onClose, drinkingReason }: Props) {
 
       {done && (
         <button
-          onClick={onClose}
+          onClick={handleClose}
           style={{ position: 'absolute', bottom: '40px', left: '50%', transform: 'translateX(-50%)', padding: '14px 28px', background: '#3ab600', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '15px', fontWeight: '900', letterSpacing: '1px', cursor: 'pointer', boxShadow: '0 4px 12px rgba(0,0,0,0.5)', whiteSpace: 'nowrap' }}
         >
           OK THAT'S ALL I CAN TAKE
