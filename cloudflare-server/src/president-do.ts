@@ -4,9 +4,11 @@ import { BaseDurableObject } from './abstract-do';
 
 type SessionAttachment = { id: string; gameId?: string; playerId?: string };
 
+const STATE_KEY = 'state';
+
 export class PresidentGameStateDurableObject extends BaseDurableObject<SessionAttachment> {
   gameHost: PresidentGameHost;
-  private gameStateCache: Map<string, GameState> = new Map();
+  private gameState: GameState | null | undefined;
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
@@ -32,20 +34,16 @@ export class PresidentGameStateDurableObject extends BaseDurableObject<SessionAt
     }
   }
 
-  private async getGameState(gameId: string): Promise<GameState | null> {
-    if (this.gameStateCache.has(gameId)) {
-      return this.gameStateCache.get(gameId)!;
-    }
-    const gameState = (await this.ctx.storage.get<GameState>(`game:${gameId}`)) ?? null;
-    if (gameState) {
-      this.gameStateCache.set(gameId, gameState);
-    }
-    return gameState;
+  private async getGameState(_gameId: string): Promise<GameState | null> {
+    if (this.gameState !== undefined) return this.gameState;
+    const stored = (await this.ctx.storage.get<GameState>(STATE_KEY)) ?? null;
+    this.gameState = stored;
+    return stored;
   }
 
-  private async saveGameState(gameId: string, gameState: GameState): Promise<void> {
-    this.gameStateCache.set(gameId, gameState);
-    await this.ctx.storage.put(`game:${gameId}`, gameState);
+  private async saveGameState(_gameId: string, gameState: GameState): Promise<void> {
+    this.gameState = gameState;
+    await this.ctx.storage.put(STATE_KEY, gameState);
   }
 
   async fetch(request: Request): Promise<Response> {
@@ -78,8 +76,10 @@ export class PresidentGameStateDurableObject extends BaseDurableObject<SessionAt
   }
 
   private async handleStartGame(request: Request): Promise<Response> {
+    const url = new URL(request.url);
+    const gameId = url.searchParams.get('gameId')!;
     const { lobbyId, lobbyUsers } = await request.json<{ lobbyId: string; lobbyUsers: LobbyUser[] }>();
-    const result = await this.gameHost.startGame(lobbyId, lobbyUsers);
+    const result = await this.gameHost.startGame(gameId, lobbyId, lobbyUsers);
     await this.resetAlarm();
     return Response.json(result);
   }

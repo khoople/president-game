@@ -20,8 +20,8 @@ export default class PresidentGameHost {
     private saveGameState: SaveGameState
   ) {}
 
-  async startGame(lobbyId: string, lobbyUsers: LobbyUser[]): Promise<StartGameResponse> {
-    const gameState = createGame(lobbyId, lobbyUsers);
+  async startGame(gameId: string, lobbyId: string, lobbyUsers: LobbyUser[]): Promise<StartGameResponse> {
+    const gameState = createGame(gameId, lobbyId, lobbyUsers);
     await this.saveGameState(gameState.id, gameState);
     return { gameId: gameState.id };
   }

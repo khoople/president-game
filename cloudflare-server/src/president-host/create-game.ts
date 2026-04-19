@@ -1,9 +1,9 @@
 import { createDeck, fisherYatesShuffle } from './card';
 import { GameState, LobbyUser } from './types';
 
-export function createGame(lobbyId: string, lobbyUsers: LobbyUser[]): GameState {
+export function createGame(gameId: string, lobbyId: string, lobbyUsers: LobbyUser[]): GameState {
   const gameState: GameState = {
-    id: crypto.randomUUID(),
+    id: gameId,
     lobbyId,
     players: [],
     discard: [],

@@ -17,11 +17,7 @@ export class LobbyHost {
     private sendLobbyState: SendLobbyState,
   ) {}
 
-  async startLobby(userName: string): Promise<StartLobbyResponse> {
-    const lobbyId = Array.from({ length: 6 }, () => {
-      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-      return chars[Math.floor(Math.random() * chars.length)];
-    }).join('');
+  async startLobby(lobbyId: string, userName: string): Promise<StartLobbyResponse> {
     const lobbyUserId = crypto.randomUUID();
 
     // Create fresh state directly — don't use getLobbyState since the new lobbyId won't exist yet.

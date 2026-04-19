@@ -4,8 +4,10 @@ import { BaseDurableObject } from './abstract-do';
 
 type LobbySessionAttachment = { id: string; lobbyId?: string; lobbyUserId?: string };
 
+const STATE_KEY = 'state';
+
 export class LobbyDurableObject extends BaseDurableObject<LobbySessionAttachment> {
-  private lobbyStateCache: Map<string, LobbyState> = new Map();
+  private lobbyState: LobbyState | null | undefined;
   private lobbyHost: LobbyHost;
 
   constructor(ctx: DurableObjectState, env: Env) {
@@ -18,33 +20,26 @@ export class LobbyDurableObject extends BaseDurableObject<LobbySessionAttachment
     );
   }
 
-  private async getLobbyState(lobbyId: string): Promise<LobbyState | null> {
-    if (this.lobbyStateCache.has(lobbyId)) {
-      return this.lobbyStateCache.get(lobbyId)!;
-    }
-    const stored = await this.ctx.storage.get<LobbyState>(`lobby:${lobbyId}`);
-    if (stored) {
-      this.lobbyStateCache.set(lobbyId, stored);
-      return stored;
-    }
-    return null;
+  private async getLobbyState(_lobbyId: string): Promise<LobbyState | null> {
+    if (this.lobbyState !== undefined) return this.lobbyState;
+    const stored = (await this.ctx.storage.get<LobbyState>(STATE_KEY)) ?? null;
+    this.lobbyState = stored;
+    return stored;
   }
 
-  private async saveLobbyState(lobbyId: string, lobbyState: LobbyState): Promise<void> {
-    this.lobbyStateCache.set(lobbyId, lobbyState);
-    await this.ctx.storage.put(`lobby:${lobbyId}`, lobbyState);
+  private async saveLobbyState(_lobbyId: string, lobbyState: LobbyState): Promise<void> {
+    this.lobbyState = lobbyState;
+    await this.ctx.storage.put(STATE_KEY, lobbyState);
   }
 
-  private async sendLobbyState(lobbyId: string, lobbyState: LobbyState): Promise<void> {
+  private async sendLobbyState(_lobbyId: string, lobbyState: LobbyState): Promise<void> {
     const payload = JSON.stringify(lobbyState);
-    for (const [ws, attachment] of this.sessions) {
-      if (attachment.lobbyId === lobbyId) {
-        try {
-          ws.send(payload);
-        } catch (e) {
-          console.error('Failed to broadcast lobby state, removing stale session:', e);
-          this.sessions.delete(ws);
-        }
+    for (const [ws] of this.sessions) {
+      try {
+        ws.send(payload);
+      } catch (e) {
+        console.error('Failed to broadcast lobby state, removing stale session:', e);
+        this.sessions.delete(ws);
       }
     }
   }
@@ -83,8 +78,10 @@ export class LobbyDurableObject extends BaseDurableObject<LobbySessionAttachment
   }
 
   private async handleStart(request: Request): Promise<Response> {
+    const url = new URL(request.url);
+    const lobbyId = url.searchParams.get('lobbyId')!;
     const { userName } = await request.json<{ userName: string }>();
-    const result = await this.lobbyHost.startLobby(userName);
+    const result = await this.lobbyHost.startLobby(lobbyId, userName);
     await this.resetAlarm();
     return Response.json(result);
   }
