@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
 import LobbyTitle from './LobbyTitle';
+import { joinLobby, startLobby } from '../../api/lobby';
+
+type LobbyEntry = { lobbyId: string; userName: string; lobbyUserId: string };
 
 type Props = {
-  onJoinLobby: (name: string, lobbyId: string) => Promise<string | null>;
-  onRejoinLobby: (lobbyId: string, userName: string) => void;
-  onStartNewLobby: (name: string) => void;
+  onLobbyEntered: (entry: LobbyEntry) => void;
 };
 
-export default function LobbyHome({ onJoinLobby, onRejoinLobby, onStartNewLobby }: Props) {
+export default function LobbyHome({ onLobbyEntered }: Props) {
   const [name, setName] = useState(() => sessionStorage.getItem('userName') ?? '');
   const [lobbyId, setLobbyId] = useState(() => {
     const param = new URLSearchParams(window.location.search).get('j');
@@ -42,19 +43,35 @@ export default function LobbyHome({ onJoinLobby, onRejoinLobby, onStartNewLobby 
 
     // If both the lobbyId and name match a stored session, rejoin directly.
     const trimmedName = name.trim();
-    if (trimmedName && localStorage.getItem(`lobby-user-id-${trimmedLobbyId}-${trimmedName}`)) {
-      onRejoinLobby(trimmedLobbyId, trimmedName);
-      return;
+    if (trimmedName) {
+      const storedLobbyUserId = localStorage.getItem(`lobby-user-id-${trimmedLobbyId}-${trimmedName}`);
+      if (storedLobbyUserId) {
+        onLobbyEntered({ lobbyId: trimmedLobbyId, userName: trimmedName, lobbyUserId: storedLobbyUserId });
+        return;
+      }
     }
 
     if (!validateName()) return;
-    const error = await onJoinLobby(name.trim(), trimmedLobbyId);
-    if (error) setLobbyIdError(error);
+    const result = await joinLobby(trimmedLobbyId, trimmedName);
+    if (result.error) {
+      setLobbyIdError(result.error);
+      return;
+    }
+    if (!result.lobbyUserId) {
+      setLobbyIdError('Unknown error joining lobby.');
+      return;
+    }
+    localStorage.setItem(`lobby-user-id-${trimmedLobbyId}-${trimmedName}`, result.lobbyUserId);
+    onLobbyEntered({ lobbyId: trimmedLobbyId, userName: trimmedName, lobbyUserId: result.lobbyUserId });
   };
 
-  const handleStartNew = () => {
+  const handleStartNew = async () => {
     if (!validateName()) return;
-    onStartNewLobby(name.trim());
+    const trimmedName = name.trim();
+    const result = await startLobby(trimmedName);
+    if (result.error || !result.lobbyId || !result.lobbyUserId) return;
+    localStorage.setItem(`lobby-user-id-${result.lobbyId}-${trimmedName}`, result.lobbyUserId);
+    onLobbyEntered({ lobbyId: result.lobbyId, userName: trimmedName, lobbyUserId: result.lobbyUserId });
   };
 
   return (
@@ -143,20 +160,7 @@ export default function LobbyHome({ onJoinLobby, onRejoinLobby, onStartNewLobby 
             </div>
             <button
               onClick={handleJoin}
-              style={{
-                padding: '10px 16px',
-                borderRadius: '8px',
-                border: 'none',
-                background: '#2980b9',
-                color: '#fff',
-                fontSize: '14px',
-                fontWeight: '900',
-                letterSpacing: '1px',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
-                cursor: 'pointer',
-                whiteSpace: 'nowrap',
-                flexShrink: 0,
-              }}
+              className="btn btn-sm btn-blue"
             >
               JOIN LOBBY
             </button>
@@ -177,18 +181,7 @@ export default function LobbyHome({ onJoinLobby, onRejoinLobby, onStartNewLobby 
         <button
           onClick={handleStartNew}
           disabled={!!lobbyId}
-          style={{
-            padding: '12px',
-            borderRadius: '8px',
-            border: 'none',
-            background: lobbyId ? '#777' : '#c0392b',
-            color: '#fff',
-            fontSize: '15px',
-            fontWeight: '900',
-            letterSpacing: '1px',
-            boxShadow: lobbyId ? 'none' : '0 4px 12px rgba(0,0,0,0.4)',
-            cursor: lobbyId ? 'default' : 'pointer',
-          }}
+          className="btn btn-md btn-red"
         >
           START NEW LOBBY
         </button>

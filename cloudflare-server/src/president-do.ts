@@ -68,6 +68,10 @@ export class PresidentGameStateDurableObject extends BaseDurableObject<SessionAt
       return this.handleMakePlay(request);
     }
 
+    if (url.pathname === '/game/next-round' && request.method === 'POST') {
+      return this.handleNextRound(request);
+    }
+
     if (url.pathname === '/game/exit' && request.method === 'POST') {
       return this.handleExitGame(request);
     }
@@ -94,6 +98,13 @@ export class PresidentGameStateDurableObject extends BaseDurableObject<SessionAt
   private async handleMakePlay(request: Request): Promise<Response> {
     const play = await request.json<Play>();
     const result = await this.gameHost.makePlay(play);
+    await this.resetAlarm();
+    return Response.json(result);
+  }
+
+  private async handleNextRound(request: Request): Promise<Response> {
+    const { gameId, playerId } = await request.json<{ gameId: string; playerId: string }>();
+    const result = await this.gameHost.startNextRound(gameId, playerId);
     await this.resetAlarm();
     return Response.json(result);
   }

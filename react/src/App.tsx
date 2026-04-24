@@ -1,6 +1,6 @@
 import { useEffect, useReducer, useRef, useState } from 'react';
-import { startGame, joinGame, openPlayerStateSocket, playCards, playPass, playDrink, exitGame } from './api/game';
-import { startLobby, joinLobby, exitLobby, updateLobby, openLobbyStateSocket, sendLobbyMessage } from './api/lobby';
+import { startGame, joinGame, openPlayerStateSocket, exitGame, startNextRound } from './api/game';
+import { exitLobby, updateLobby, openLobbyStateSocket, sendLobbyMessage } from './api/lobby';
 import type { DrinkingReason, LobbyState, PlayerState } from './president-client/types';
 import Drink from './components/game/Drink';
 import GameScreen from './components/game/GameScreen';
@@ -15,6 +15,7 @@ type State = {
   lobbyState: LobbyState | null;
   playerState: PlayerState | null;
   lobbyUserId: string | null;
+  gameId: string | null;
   chatPreview: { name: string; text: string } | null;
   drinkingReason: DrinkingReason | null;
 };
@@ -24,6 +25,7 @@ const initialState: State = {
   lobbyState: null,
   playerState: null,
   lobbyUserId: null,
+  gameId: null,
   chatPreview: null,
   drinkingReason: null,
 };
@@ -33,6 +35,7 @@ type Action =
   | { type: 'LOBBY_EXITED' }
   | { type: 'LOBBY_STATE_RECEIVED'; lobbyState: LobbyState }
   | { type: 'LOBBY_ROOM_SHOWN' }
+  | { type: 'GAME_JOINED'; gameId: string }
   | { type: 'GAME_SCREEN_SHOWN' }
   | { type: 'PLAYER_STATE_RECEIVED'; playerState: PlayerState }
   | { type: 'GAME_EXITED' }
@@ -49,12 +52,14 @@ function handleStateUpdate(state: State, action: Action): State {
       return { ...state, lobbyState: action.lobbyState };
     case 'LOBBY_ROOM_SHOWN':
       return { ...state, screen: 'lobby-room', chatPreview: null };
+    case 'GAME_JOINED':
+      return { ...state, gameId: action.gameId };
     case 'GAME_SCREEN_SHOWN':
       return { ...state, screen: 'game', chatPreview: null };
     case 'PLAYER_STATE_RECEIVED':
       return { ...state, playerState: action.playerState };
     case 'GAME_EXITED':
-      return { ...state, playerState: null };
+      return { ...state, playerState: null, gameId: null };
     case 'CHAT_PREVIEW_SHOWN':
       return { ...state, chatPreview: { name: action.name, text: action.text } };
     case 'DRINK_STARTED':
@@ -64,7 +69,7 @@ function handleStateUpdate(state: State, action: Action): State {
 
 function App() {
   const [state, updateState] = useReducer(handleStateUpdate, initialState);
-  const { screen, lobbyState, playerState, lobbyUserId, chatPreview, drinkingReason } = state;
+  const { screen, lobbyState, playerState, lobbyUserId, gameId, chatPreview, drinkingReason } = state;
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
 
   const lastMessageCountRef = useRef<number>(0);
@@ -92,6 +97,7 @@ function App() {
 
     await updateLobby(lobbyIdRef.current, lobbyUserId, { gameId, status: 'in-game' });
     lastMessageCountRef.current = lobbyState.messages.length;
+    updateState({ type: 'GAME_JOINED', gameId });
     updateState({ type: 'GAME_SCREEN_SHOWN' });
   };
 
@@ -121,36 +127,11 @@ function App() {
     updateState({ type: 'LOBBY_EXITED' });
   };
 
-  const handleJoinLobby = async (name: string, lobbyId: string): Promise<string | null> => {
-    const result = await joinLobby(lobbyId, name);
-    if (result.error) return result.error;
-    if (!result.lobbyUserId) return 'Unknown error joining lobby.';
-    lobbyIdRef.current = lobbyId;
-    userNameRef.current = name;
-    localStorage.setItem(`lobby-user-id-${lobbyId}-${name}`, result.lobbyUserId);
-    connectToLobbySocket(lobbyId, result.lobbyUserId);
-    updateState({ type: 'LOBBY_JOINED', lobbyUserId: result.lobbyUserId });
-    return null;
-  };
-
-  const handleRejoinLobby = (lobbyId: string, userName: string) => {
-    const storedLobbyUserId = localStorage.getItem(`lobby-user-id-${lobbyId}-${userName}`);
-    if (!storedLobbyUserId) return;
+  const handleLobbyEntered = ({ lobbyId, userName, lobbyUserId }: { lobbyId: string; userName: string; lobbyUserId: string }) => {
     lobbyIdRef.current = lobbyId;
     userNameRef.current = userName;
-    connectToLobbySocket(lobbyId, storedLobbyUserId);
-    updateState({ type: 'LOBBY_JOINED', lobbyUserId: storedLobbyUserId });
-  };
-
-  const handleStartNewLobby = async (name: string) => {
-    const result = await startLobby(name);
-    if (result.error || !result.lobbyId || !result.lobbyUserId) return;
-    const { lobbyId, lobbyUserId: newLobbyUserId } = result;
-    lobbyIdRef.current = lobbyId;
-    userNameRef.current = name;
-    localStorage.setItem(`lobby-user-id-${lobbyId}-${name}`, newLobbyUserId);
-    connectToLobbySocket(lobbyId, newLobbyUserId);
-    updateState({ type: 'LOBBY_JOINED', lobbyUserId: newLobbyUserId });
+    connectToLobbySocket(lobbyId, lobbyUserId);
+    updateState({ type: 'LOBBY_JOINED', lobbyUserId });
   };
 
   const handleJoinGame = async (gameId: string, userId: string) => {
@@ -169,7 +150,13 @@ function App() {
 
     lastMessageCountRef.current = lobbyState?.messages.length ?? 0;
     // Show the game screen. There may be a delay before we receive the first player state update but it will populate once we do.
+    updateState({ type: 'GAME_JOINED', gameId });
     updateState({ type: 'GAME_SCREEN_SHOWN' });
+  };
+
+  const handleNextRound = async () => {
+    if (!gameIdRef.current || !playerIdRef.current) return;
+    await startNextRound(gameIdRef.current, playerIdRef.current);
   };
 
   const handleQuitGame = async () => {
@@ -224,26 +211,9 @@ function App() {
     }
   }, [playerState?.isDrinking, playerState?.drinkingReason]);
 
-  const handlePlayCards = async (chosenHand: string[]): Promise<string | null> => {
-    if (!gameIdRef.current || !playerIdRef.current) return null;
-    const result = await playCards(gameIdRef.current, playerIdRef.current, chosenHand);
-    return result.isValid ? null : (result.invalidMessageLong ?? 'Invalid play.');
-  };
-
-  const handlePass = async (): Promise<string | null> => {
-    if (!gameIdRef.current || !playerIdRef.current) return null;
-    const result = await playPass(gameIdRef.current, playerIdRef.current);
-    return result.isValid ? null : (result.invalidMessageLong ?? 'Cannot pass.');
-  };
-
-  const handleDoneDrinking = () => {
-    if (gameIdRef.current && playerIdRef.current) playDrink(gameIdRef.current, playerIdRef.current);
-    updateState({ type: 'GAME_SCREEN_SHOWN' });
-  };
-
   // Home screen with options to create or join a lobby.
   if (screen === 'home') {
-    return <LobbyHome onJoinLobby={handleJoinLobby} onRejoinLobby={handleRejoinLobby} onStartNewLobby={handleStartNewLobby} />;
+    return <LobbyHome onLobbyEntered={handleLobbyEntered} />;
   }
 
   if (screen === 'lobby-room' && lobbyState && lobbyUserId) {
@@ -264,21 +234,28 @@ function App() {
     );
   }
 
-  if (screen === 'drink' && drinkingReason) {
-    return <Drink onClose={handleDoneDrinking} drinkingReason={drinkingReason} />;
+  if (screen === 'drink' && drinkingReason && gameId && playerState) {
+    return (
+      <Drink
+        drinkingReason={drinkingReason}
+        gameId={gameId}
+        playerId={playerState.playerId}
+        onClose={() => updateState({ type: 'GAME_SCREEN_SHOWN' })}
+      />
+    );
   }
 
   if (screen === 'game') {
-    if (!playerState) return null;
+    if (!playerState || !gameId) return null;
     return (
       <GameScreen
         playerState={playerState}
+        gameId={gameId}
         isMobile={isMobile}
         chatPreview={chatPreview}
         onReturnToLobby={() => updateState({ type: 'LOBBY_ROOM_SHOWN' })}
-        onPlay={handlePlayCards}
-        onPass={handlePass}
         onQuit={handleQuitGame}
+        onNextRound={handleNextRound}
       />
     );
   }

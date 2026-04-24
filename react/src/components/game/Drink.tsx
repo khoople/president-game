@@ -1,9 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import type { DrinkingReason } from '../../president-client/types';
+import { playDrink } from '../../api/game';
 
 type Props = {
   onClose: () => void;
   drinkingReason: DrinkingReason;
+  gameId: string;
+  playerId: string;
 };
 
 const DRINKING_TEXT: Record<DrinkingReason, { title: string; subtitle: string }> = {
@@ -27,7 +30,7 @@ const BUBBLES = [
   { size:  6, left: '93%', bottom: '35%', delay: 1.3, dur: 3.3 },
 ];
 
-export default function Drink({ onClose, drinkingReason }: Props) {
+export default function Drink({ onClose, drinkingReason, gameId, playerId }: Props) {
   const { title, subtitle } = DRINKING_TEXT[drinkingReason];
   const [done, setDone] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -46,6 +49,7 @@ export default function Drink({ onClose, drinkingReason }: Props) {
 
   const handleClose = () => {
     audioRef.current?.pause();
+    playDrink(gameId, playerId);
     onClose();
   };
 
@@ -120,7 +124,7 @@ export default function Drink({ onClose, drinkingReason }: Props) {
       {done && (
         <button
           onClick={handleClose}
-          style={{ position: 'absolute', bottom: '40px', left: '50%', transform: 'translateX(-50%)', padding: '14px 28px', background: '#3ab600', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '15px', fontWeight: '900', letterSpacing: '1px', cursor: 'pointer', boxShadow: '0 4px 12px rgba(0,0,0,0.5)', whiteSpace: 'nowrap' }}
+          className="btn btn-green btn-drink-ok"
         >
           OK THAT'S ALL I CAN TAKE
         </button>

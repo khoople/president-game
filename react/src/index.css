@@ -8,3 +8,92 @@ body {
   overflow: hidden;
   font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
 }
+
+/* ── Base button ──────────────────────────────────────────── */
+
+.btn {
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  font-weight: 900;
+  letter-spacing: 1px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  white-space: nowrap;
+}
+
+.btn:disabled {
+  background: #777;
+  box-shadow: none;
+  cursor: default;
+}
+
+/* Size modifiers */
+.btn-sm { padding: 10px 16px; font-size: 14px; flex-shrink: 0; }
+.btn-md { padding: 12px;      font-size: 15px; }
+.btn-lg { padding: 12px 40px; font-size: 20px; }
+
+/* Color modifiers */
+.btn-green { background: #3ab600; }
+.btn-red   { background: #c0392b; }
+.btn-blue  { background: #2980b9; }
+
+/* ── Button variants ──────────────────────────────────────── */
+
+/* SEND uses a darker muted disabled look */
+.btn-send:disabled {
+  background: #333;
+  color: #666;
+}
+
+/* EXIT GAME — thicker border + tighter drop shadow */
+.btn-exit-game {
+  padding: 12px 32px;
+  font-size: 16px;
+  border: 2px solid #922b21;
+  box-shadow: 2px 2px 6px rgba(0,0,0,0.4);
+}
+
+/* DRINK OK — centered overlay button */
+.btn-drink-ok {
+  position: absolute;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 14px 28px;
+  font-size: 15px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+}
+
+/* ── Standalone (too distinct to compose) ────────────────── */
+
+.btn-lobby-nav {
+  padding: 3px 14px;
+  font-size: 11px;
+  font-weight: bold;
+  letter-spacing: 1px;
+  color: #fff;
+  background: linear-gradient(to bottom, #2d6a2d, #1a3d1a);
+  border: 1px solid #0f240f;
+  border-radius: 4px;
+  cursor: pointer;
+  box-shadow: 0 1px 0 rgba(255,255,255,0.12) inset, 1px 1px 3px rgba(0,0,0,0.8);
+  flex-shrink: 0;
+}
+
+.btn-copy-link {
+  background: #333;
+  border: none;
+  border-radius: 4px;
+  color: #aaa;
+  cursor: pointer;
+  font-size: 12px;
+  padding: 3px 8px;
+  flex-shrink: 0;
+  transition: background 0.2s, color 0.2s;
+}
+
+.btn-copy-link--copied {
+  background: #27ae60;
+  color: #fff;
+}

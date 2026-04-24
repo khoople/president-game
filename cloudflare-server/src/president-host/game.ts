@@ -1,4 +1,4 @@
-import { createGame } from './create-game';
+import { createGame, createNextRound } from './create-game';
 import { applyPlay, advanceTurn } from './play';
 import { derivePlayerState } from './player-state';
 import type {
@@ -24,6 +24,28 @@ export default class PresidentGameHost {
     const gameState = createGame(gameId, lobbyId, lobbyUsers);
     await this.saveGameState(gameState.id, gameState);
     return { gameId: gameState.id };
+  }
+
+  async startNextRound(gameId: string, playerId: string): Promise<StartGameResponse> {
+    const gameState = await this.getGameState(gameId);
+    if (!gameState) {
+      throw new Error('Game not found');
+    }
+
+    const player = gameState.players.find((p) => p.playerId === playerId);
+    if (!player || !player.isHost) {
+      throw new Error('Only the host can start the next round');
+    }
+
+    const nextGameState = createNextRound(gameState);
+    await this.saveGameState(nextGameState.id, nextGameState);
+
+    for (const p of nextGameState.players) {
+      const playerState = derivePlayerState(p.playerId, nextGameState);
+      await this.sendPlayerState(p.playerId, playerState);
+    }
+
+    return { gameId: nextGameState.id };
   }
 
   async joinGame(gameId: string, lobbyUserId: string): Promise<JoinGameResponse> {

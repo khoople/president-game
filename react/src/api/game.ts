@@ -17,6 +17,10 @@ export async function startGame(lobbyId: string, lobbyUsers: LobbyUser[]): Promi
   return postJson('/game/start', { lobbyId, lobbyUsers });
 }
 
+export async function startNextRound(gameId: string, playerId: string): Promise<StartGameResponse> {
+  return postJson('/game/next-round', { gameId, playerId });
+}
+
 export async function joinGame(gameId: string, lobbyUserId: string): Promise<JoinGameResponse> {
   return postJson('/game/join', { gameId, lobbyUserId });
 }

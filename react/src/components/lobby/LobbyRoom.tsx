@@ -99,17 +99,7 @@ export default function LobbyRoom({ lobbyState, lobbyUserId, onStart, onEndGame,
               <button
                 onClick={handleCopyLink}
                 title="Copy invite link"
-                style={{
-                  background: copied ? '#27ae60' : '#333',
-                  border: 'none',
-                  borderRadius: '4px',
-                  color: copied ? '#fff' : '#aaa',
-                  cursor: 'pointer',
-                  fontSize: '12px',
-                  padding: '3px 8px',
-                  flexShrink: 0,
-                  transition: 'background 0.2s, color 0.2s',
-                }}
+                className={`btn-copy-link${copied ? ' btn-copy-link--copied' : ''}`}
               >
                 {copied ? 'Copied!' : 'Copy Link'}
               </button>
@@ -149,18 +139,7 @@ export default function LobbyRoom({ lobbyState, lobbyUserId, onStart, onEndGame,
               {lobbyState.status === 'in-game' && (
               <button
                 onClick={onReturnToGame}
-                style={{
-                  padding: '12px',
-                  borderRadius: '8px',
-                  border: 'none',
-                  background: '#3ab600',
-                  color: '#fff',
-                  fontSize: '15px',
-                  fontWeight: '900',
-                  letterSpacing: '1px',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
-                  cursor: 'pointer',
-                }}
+                className="btn btn-md btn-green"
               >
                 RETURN TO GAME
               </button>
@@ -168,18 +147,7 @@ export default function LobbyRoom({ lobbyState, lobbyUserId, onStart, onEndGame,
             {isHost && lobbyState.status !== 'in-game' && (
               <button
                 onClick={onStart}
-                style={{
-                  padding: '12px',
-                  borderRadius: '8px',
-                  border: 'none',
-                  background: '#c0392b',
-                  color: '#fff',
-                  fontSize: '15px',
-                  fontWeight: '900',
-                  letterSpacing: '1px',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
-                  cursor: 'pointer',
-                }}
+                className="btn btn-md btn-red"
               >
                 START GAME
               </button>
@@ -187,18 +155,7 @@ export default function LobbyRoom({ lobbyState, lobbyUserId, onStart, onEndGame,
             {isHost && lobbyState.status === 'in-game' && (
               <button
                 onClick={onEndGame}
-                style={{
-                  padding: '12px',
-                  borderRadius: '8px',
-                  border: 'none',
-                  background: '#c0392b',
-                  color: '#fff',
-                  fontSize: '15px',
-                  fontWeight: '900',
-                  letterSpacing: '1px',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
-                  cursor: 'pointer',
-                }}
+                className="btn btn-md btn-red"
               >
                 END GAME
               </button>
@@ -206,18 +163,7 @@ export default function LobbyRoom({ lobbyState, lobbyUserId, onStart, onEndGame,
             {!isHost && lobbyState.status === 'in-game' && (
               <button
                 onClick={onQuitGame}
-                style={{
-                  padding: '12px',
-                  borderRadius: '8px',
-                  border: 'none',
-                  background: '#c0392b',
-                  color: '#fff',
-                  fontSize: '15px',
-                  fontWeight: '900',
-                  letterSpacing: '1px',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
-                  cursor: 'pointer',
-                }}
+                className="btn btn-md btn-red"
               >
                 QUIT GAME
               </button>
@@ -225,18 +171,7 @@ export default function LobbyRoom({ lobbyState, lobbyUserId, onStart, onEndGame,
             {lobbyState.status !== 'in-game' && (
               <button
                 onClick={onExitLobby}
-                style={{
-                  padding: '12px',
-                  borderRadius: '8px',
-                  border: 'none',
-                  background: '#2980b9',
-                  color: '#fff',
-                  fontSize: '15px',
-                  fontWeight: '900',
-                  letterSpacing: '1px',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
-                  cursor: 'pointer',
-                }}
+                className="btn btn-md btn-blue"
               >
                 EXIT LOBBY
               </button>
@@ -310,19 +245,7 @@ export default function LobbyRoom({ lobbyState, lobbyUserId, onStart, onEndGame,
             <button
               onClick={handleSend}
               disabled={!draft.trim()}
-              style={{
-                padding: '10px 16px',
-                borderRadius: '8px',
-                border: 'none',
-                background: draft.trim() ? '#2980b9' : '#333',
-                color: draft.trim() ? '#fff' : '#666',
-                fontSize: '14px',
-                fontWeight: '900',
-                letterSpacing: '1px',
-                boxShadow: draft.trim() ? '0 4px 12px rgba(0,0,0,0.4)' : 'none',
-                cursor: draft.trim() ? 'pointer' : 'default',
-                flexShrink: 0,
-              }}
+              className="btn btn-sm btn-blue btn-send"
             >
               SEND
             </button>
