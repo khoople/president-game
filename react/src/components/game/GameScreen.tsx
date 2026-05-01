@@ -10,6 +10,7 @@ import Turn from './Turn';
 import PlayerList from './PlayerList';
 import MessageDisplay from './MessageDisplay';
 import MenuBar from './MenuBar';
+import RuleScreen from './RuleScreen';
 
 type Props = {
   playerState: PlayerState;
@@ -25,6 +26,7 @@ type Props = {
 export default function GameScreen({ playerState, gameId, isMobile, chatPreview, isHost, onReturnToLobby, onQuit, onNextRound }: Props) {
   const [chosenHand, setChosenHand] = useState<string[]>([]);
   const [message, setMessage] = useState<string | null>(null);
+  const [showRules, setShowRules] = useState(false);
   const prevActiveHandRef = useRef(playerState.activeHand);
 
   useEffect(() => {
@@ -65,9 +67,13 @@ export default function GameScreen({ playerState, gameId, isMobile, chatPreview,
     playerState.opponents.find((o) => o.playerNumber === playerState.activePlayerNumber)?.playerName
     ?? playerState.playerName;
 
+  if (showRules) {
+    return <RuleScreen onClose={() => setShowRules(false)} />;
+  }
+
   return (
     <div style={{ width: '100vw', height: '100dvh', background: '#2d6a2d', padding: '8px', paddingTop: 0, paddingBottom: 'max(4px, env(safe-area-inset-bottom))', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-      <MenuBar chatPreview={chatPreview} onReturnToLobby={onReturnToLobby} />
+      <MenuBar chatPreview={chatPreview} onReturnToLobby={onReturnToLobby} onShowRules={() => setShowRules(true)} />
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
         <PlayerList
           opponents={playerState.opponents}
