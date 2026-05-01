@@ -247,12 +247,14 @@ function App() {
 
   if (screen === 'game') {
     if (!playerState || !gameId) return null;
+    const isHost = lobbyState?.users.find((u) => u.id === lobbyUserId)?.isHost ?? false;
     return (
       <GameScreen
         playerState={playerState}
         gameId={gameId}
         isMobile={isMobile}
         chatPreview={chatPreview}
+        isHost={isHost}
         onReturnToLobby={() => updateState({ type: 'LOBBY_ROOM_SHOWN' })}
         onQuit={handleQuitGame}
         onNextRound={handleNextRound}

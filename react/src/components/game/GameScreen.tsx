@@ -16,12 +16,13 @@ type Props = {
   gameId: string;
   isMobile: boolean;
   chatPreview: { name: string; text: string } | null;
+  isHost: boolean;
   onReturnToLobby: () => void;
   onQuit: () => void;
   onNextRound: () => void;
 };
 
-export default function GameScreen({ playerState, gameId, isMobile, chatPreview, onReturnToLobby, onQuit, onNextRound }: Props) {
+export default function GameScreen({ playerState, gameId, isMobile, chatPreview, isHost, onReturnToLobby, onQuit, onNextRound }: Props) {
   const [chosenHand, setChosenHand] = useState<string[]>([]);
   const [message, setMessage] = useState<string | null>(null);
   const prevActiveHandRef = useRef(playerState.activeHand);
@@ -103,12 +104,14 @@ export default function GameScreen({ playerState, gameId, isMobile, chatPreview,
             >
               EXIT GAME
             </button>
-            <button
-              onClick={onNextRound}
-              className="btn btn-green btn-exit-game"
-            >
-              NEXT ROUND
-            </button>
+            {isHost && (
+              <button
+                onClick={onNextRound}
+                className="btn btn-green btn-next-round"
+              >
+                NEXT ROUND
+              </button>
+            )}
           </div>
         ) : (
           <div style={{ display: 'flex', gap: '12px' }}>

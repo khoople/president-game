@@ -54,6 +54,14 @@ body {
   box-shadow: 2px 2px 6px rgba(0,0,0,0.4);
 }
 
+/* NEXT ROUND — matches EXIT GAME sizing with a green border */
+.btn-next-round {
+  padding: 12px 32px;
+  font-size: 16px;
+  border: 2px solid #277a00;
+  box-shadow: 2px 2px 6px rgba(0,0,0,0.4);
+}
+
 /* DRINK OK — centered overlay button */
 .btn-drink-ok {
   position: absolute;

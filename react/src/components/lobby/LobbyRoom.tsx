@@ -147,6 +147,7 @@ export default function LobbyRoom({ lobbyState, lobbyUserId, onStart, onEndGame,
             {isHost && lobbyState.status !== 'in-game' && (
               <button
                 onClick={onStart}
+                disabled={lobbyState.users.length < 2}
                 className="btn btn-md btn-red"
               >
                 START GAME
