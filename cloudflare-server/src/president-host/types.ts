@@ -69,6 +69,10 @@ export interface UpdateLobbyResponse extends Partial<LobbyState> {
   error?: string;
 }
 
+export interface KickUserResponse extends Partial<LobbyState> {
+  error?: string;
+}
+
 export type DrinkingReason = 'passed' | 'social' | 'skipped';
 
 export interface PlayResponse {

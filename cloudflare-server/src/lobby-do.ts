@@ -74,6 +74,10 @@ export class LobbyDurableObject extends BaseDurableObject<LobbySessionAttachment
       return this.handleUpdate(request);
     }
 
+    if (url.pathname === '/lobby/kick' && request.method === 'POST') {
+      return this.handleKick(request);
+    }
+
     return new Response('Not found', { status: 404 });
   }
 
@@ -122,6 +126,30 @@ export class LobbyDurableObject extends BaseDurableObject<LobbySessionAttachment
     const result = await this.lobbyHost.updateLobby(lobbyId, lobbyUserId, { status, gameId });
     await this.resetAlarm();
     return Response.json(result);
+  }
+
+  private async handleKick(request: Request): Promise<Response> {
+    const { lobbyId, lobbyUserId, targetUserId } = await request.json<{
+      lobbyId: string;
+      lobbyUserId: string;
+      targetUserId: string;
+    }>();
+    const result = await this.lobbyHost.kickUser(lobbyId, lobbyUserId, targetUserId);
+    if (!result.error && result.status === 'in-game' && result.gameId) {
+      await this.kickFromGame(result.gameId, targetUserId);
+    }
+    await this.resetAlarm();
+    return Response.json(result);
+  }
+
+  private async kickFromGame(gameId: string, lobbyUserId: string): Promise<void> {
+    const id = this.env.PRESIDENT_DO.idFromName(gameId);
+    const stub = this.env.PRESIDENT_DO.get(id);
+    await stub.fetch('https://internal/game/kick', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ gameId, lobbyUserId }),
+    });
   }
 
   // WebSocket connection for a client to receive LobbyState updates.

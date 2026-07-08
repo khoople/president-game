@@ -1,6 +1,6 @@
 import { useEffect, useReducer, useRef, useState } from 'react';
 import { startGame, joinGame, openPlayerStateSocket, exitGame, startNextRound } from './api/game';
-import { exitLobby, updateLobby, openLobbyStateSocket, sendLobbyMessage } from './api/lobby';
+import { exitLobby, updateLobby, openLobbyStateSocket, sendLobbyMessage, kickUser } from './api/lobby';
 import type { DrinkingReason, LobbyState, PlayerState } from './president-client/types';
 import Drink from './components/game/Drink';
 import GameScreen from './components/game/GameScreen';
@@ -171,7 +171,24 @@ function App() {
     await handleExitLobby();
   };
 
+  const handleKicked = () => {
+    lobbyWsRef.current?.close();
+    lobbyWsRef.current = null;
+    gameWsRef.current?.close();
+    gameWsRef.current = null;
+    playerIdRef.current = null;
+    gameIdRef.current = null;
+    localStorage.removeItem(`lobby-user-id-${lobbyIdRef.current}-${userNameRef.current}`);
+    lobbyIdRef.current = '';
+    updateState({ type: 'LOBBY_EXITED' });
+  };
+
   const applyLobbyState = (newLobbyState: LobbyState, myLobbyUserId: string) => {
+    if (!newLobbyState.users.some((u) => u.id === myLobbyUserId)) {
+      handleKicked();
+      return;
+    }
+
     updateState({ type: 'LOBBY_STATE_RECEIVED', lobbyState: newLobbyState });
 
     // When lobbyState.status changes to "in-game", attempt to join the game and then switch to displaying the game screen.
@@ -230,6 +247,7 @@ function App() {
           const user = lobbyState.users.find((u) => u.id === lobbyUserId);
           if (user) sendLobbyMessage(lobbyIdRef.current, lobbyUserId, user.name, text);
         }}
+        onKickUser={(targetUserId) => kickUser(lobbyIdRef.current, lobbyUserId, targetUserId)}
       />
     );
   }

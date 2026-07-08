@@ -8,6 +8,7 @@ import type {
   ExitLobbyResponse,
   SendMessageResponse,
   UpdateLobbyResponse,
+  KickUserResponse,
 } from './types';
 
 export class LobbyHost {
@@ -50,6 +51,26 @@ export class LobbyHost {
     if (!lobbyState) return { error: `Lobby '${lobbyId}' not found.` };
 
     lobbyState.users = lobbyState.users.filter((u) => u.id !== lobbyUserId);
+    await this.saveLobbyState(lobbyId, lobbyState);
+    await this.sendLobbyState(lobbyId, lobbyState);
+
+    return lobbyState;
+  }
+
+  async kickUser(lobbyId: string, lobbyUserId: string, targetUserId: string): Promise<KickUserResponse> {
+    const lobbyState = await this.getLobbyState(lobbyId);
+    if (!lobbyState) return { error: `Lobby '${lobbyId}' not found.` };
+
+    const requestingUser = lobbyState.users.find((u) => u.id === lobbyUserId);
+    if (!requestingUser?.isHost) {
+      return { error: 'Only the host can kick a player.' };
+    }
+
+    const targetUser = lobbyState.users.find((u) => u.id === targetUserId);
+    if (!targetUser) return { error: 'Player not found in lobby.' };
+    if (targetUser.isHost) return { error: 'The host cannot be kicked.' };
+
+    lobbyState.users = lobbyState.users.filter((u) => u.id !== targetUserId);
     await this.saveLobbyState(lobbyId, lobbyState);
     await this.sendLobbyState(lobbyId, lobbyState);
 

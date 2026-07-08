@@ -76,6 +76,10 @@ export class PresidentGameStateDurableObject extends BaseDurableObject<SessionAt
       return this.handleExitGame(request);
     }
 
+    if (url.pathname === '/game/kick' && request.method === 'POST') {
+      return this.handleKickPlayer(request);
+    }
+
     return new Response('Not found', { status: 404 });
   }
 
@@ -112,6 +116,13 @@ export class PresidentGameStateDurableObject extends BaseDurableObject<SessionAt
   private async handleExitGame(request: Request): Promise<Response> {
     const { gameId, playerId } = await request.json<{ gameId: string; playerId: string }>();
     await this.gameHost.exitGame(gameId, playerId);
+    await this.resetAlarm();
+    return Response.json({ success: true });
+  }
+
+  private async handleKickPlayer(request: Request): Promise<Response> {
+    const { gameId, lobbyUserId } = await request.json<{ gameId: string; lobbyUserId: string }>();
+    await this.gameHost.kickPlayer(gameId, lobbyUserId);
     await this.resetAlarm();
     return Response.json({ success: true });
   }

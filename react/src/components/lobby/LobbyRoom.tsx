@@ -10,13 +10,14 @@ type Props = {
   onReturnToGame: () => void;
   onQuitGame: () => void;
   onSendMessage: (text: string) => void;
+  onKickUser: (targetUserId: string) => void;
 };
 
 function formatTime(timestamp: number): string {
   return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
-export default function LobbyRoom({ lobbyState, lobbyUserId, onStart, onEndGame, onExitLobby, onReturnToGame, onQuitGame, onSendMessage }: Props) {
+export default function LobbyRoom({ lobbyState, lobbyUserId, onStart, onEndGame, onExitLobby, onReturnToGame, onQuitGame, onSendMessage, onKickUser }: Props) {
   const [draft, setDraft] = useState('');
   const [copied, setCopied] = useState(false);
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
@@ -129,6 +130,23 @@ export default function LobbyRoom({ lobbyState, lobbyUserId, onStart, onEndGame,
                     <span style={{ color: '#f39c12', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                       Host
                     </span>
+                  )}
+                  {isHost && user.id !== lobbyUserId && (
+                    <button
+                      onClick={() => onKickUser(user.id)}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        padding: 0,
+                        marginLeft: 'auto',
+                        color: '#2980b9',
+                        fontSize: '11px',
+                        cursor: 'pointer',
+                        flexShrink: 0,
+                      }}
+                    >
+                      kick
+                    </button>
                   )}
                 </div>
               ))}

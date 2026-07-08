@@ -7,6 +7,7 @@ import type {
   ExitLobbyResponse,
   SendMessageResponse,
   UpdateLobbyResponse,
+  KickUserResponse,
 } from '../president-client/types';
 
 async function postJson<T>(path: string, body: unknown): Promise<T> {
@@ -37,6 +38,10 @@ export async function sendLobbyMessage(lobbyId: string, lobbyUserId: string, use
 
 export async function updateLobby(lobbyId: string, lobbyUserId: string, updates: { status?: LobbyState['status']; gameId?: string }): Promise<UpdateLobbyResponse> {
   return postJson('/lobby/update', { lobbyId, lobbyUserId, ...updates });
+}
+
+export async function kickUser(lobbyId: string, lobbyUserId: string, targetUserId: string): Promise<KickUserResponse> {
+  return postJson('/lobby/kick', { lobbyId, lobbyUserId, targetUserId });
 }
 
 export function openLobbyStateSocket(lobbyId: string, lobbyUserId: string): WebSocket {

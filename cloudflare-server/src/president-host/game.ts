@@ -138,6 +138,16 @@ export default class PresidentGameHost {
     }
   }
 
+  async kickPlayer(gameId: string, lobbyUserId: string): Promise<void> {
+    const gameState = await this.getGameState(gameId);
+    if (!gameState) return;
+
+    const player = gameState.players.find((p) => p.lobbyUserId === lobbyUserId);
+    if (!player) return;
+
+    await this.exitGame(gameId, player.playerId);
+  }
+
   async setPlayerConnectionStatus(gameId: string, playerId: string, isConnected: boolean): Promise<void> {
     const gameState = await this.getGameState(gameId);
     if (!gameState) return;

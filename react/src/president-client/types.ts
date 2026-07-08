@@ -49,6 +49,10 @@ export interface UpdateLobbyResponse extends Partial<LobbyState> {
   error?: string;
 }
 
+export interface KickUserResponse extends Partial<LobbyState> {
+  error?: string;
+}
+
 // Game response types
 
 export interface StartGameResponse {
