@@ -11,13 +11,60 @@ type Props = {
   onQuitGame: () => void;
   onSendMessage: (text: string) => void;
   onKickUser: (targetUserId: string) => void;
+  inVoice: boolean;
+  isMuted: boolean;
+  onJoinVoice: () => void;
+  onLeaveVoice: () => void;
+  onToggleMute: () => void;
 };
+
+function MicIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="#2ecc71" style={{ flexShrink: 0 }}>
+      <title>In voice</title>
+      <path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z" />
+    </svg>
+  );
+}
+
+function MicOffIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+      <line x1="2" y1="2" x2="22" y2="22" />
+      <path d="M18.89 13.23A7.12 7.12 0 0 0 19 12v-2" />
+      <path d="M5 10v2a7 7 0 0 0 12 5" />
+      <path d="M15 9.34V5a3 3 0 0 0-5.68-1.33" />
+      <path d="M9 9v3a3 3 0 0 0 5.12 2.12" />
+      <line x1="12" y1="19" x2="12" y2="22" />
+    </svg>
+  );
+}
+
+function CopyIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+      <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+    </svg>
+  );
+}
+
+function MicButtonIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+      <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
+      <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+      <line x1="12" y1="19" x2="12" y2="22" />
+      <line x1="8" y1="22" x2="16" y2="22" />
+    </svg>
+  );
+}
 
 function formatTime(timestamp: number): string {
   return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
-export default function LobbyRoom({ lobbyState, lobbyUserId, onStart, onEndGame, onExitLobby, onReturnToGame, onQuitGame, onSendMessage, onKickUser }: Props) {
+export default function LobbyRoom({ lobbyState, lobbyUserId, onStart, onEndGame, onExitLobby, onReturnToGame, onQuitGame, onSendMessage, onKickUser, inVoice, isMuted, onJoinVoice, onLeaveVoice, onToggleMute }: Props) {
   const [draft, setDraft] = useState('');
   const [copied, setCopied] = useState(false);
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
@@ -101,7 +148,9 @@ export default function LobbyRoom({ lobbyState, lobbyUserId, onStart, onEndGame,
                 onClick={handleCopyLink}
                 title="Copy invite link"
                 className={`btn-copy-link${copied ? ' btn-copy-link--copied' : ''}`}
+                style={{ display: 'flex', alignItems: 'center', gap: '5px' }}
               >
+                <CopyIcon />
                 {copied ? 'Copied!' : 'Copy Link'}
               </button>
             </div>
@@ -131,6 +180,7 @@ export default function LobbyRoom({ lobbyState, lobbyUserId, onStart, onEndGame,
                       Host
                     </span>
                   )}
+                  {user.inVoice && <MicIcon />}
                   {isHost && user.id !== lobbyUserId && (
                     <button
                       onClick={() => onKickUser(user.id)}
@@ -210,8 +260,39 @@ export default function LobbyRoom({ lobbyState, lobbyUserId, onStart, onEndGame,
           boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
           minWidth: 0,
         }}>
-          <div style={{ color: '#888', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '12px' }}>
-            Chat
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+            <div style={{ color: '#888', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px' }}>
+              Chat
+            </div>
+            {!inVoice ? (
+              <button
+                onClick={onJoinVoice}
+                className="btn-copy-link"
+                style={{ display: 'flex', alignItems: 'center', gap: '5px' }}
+              >
+                <MicButtonIcon />
+                Enter Voice Chat
+              </button>
+            ) : (
+              <div style={{ display: 'flex', gap: '6px' }}>
+                <button
+                  onClick={onToggleMute}
+                  className="btn-copy-link"
+                  style={{ display: 'flex', alignItems: 'center', gap: '5px' }}
+                >
+                  {isMuted ? <MicButtonIcon /> : <MicOffIcon />}
+                  {isMuted ? 'Unmute' : 'Mute'}
+                </button>
+                <button
+                  onClick={onLeaveVoice}
+                  className="btn-copy-link"
+                  style={{ display: 'flex', alignItems: 'center', gap: '5px' }}
+                >
+                  <MicButtonIcon />
+                  Leave Voice Chat
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Messages */}

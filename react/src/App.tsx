@@ -1,7 +1,8 @@
 import { useEffect, useReducer, useRef, useState } from 'react';
 import { startGame, joinGame, openPlayerStateSocket, exitGame, startNextRound } from './api/game';
-import { exitLobby, updateLobby, openLobbyStateSocket, sendLobbyMessage, kickUser } from './api/lobby';
-import type { DrinkingReason, LobbyState, PlayerState } from './president-client/types';
+import { exitLobby, updateLobby, openLobbyStateSocket, sendLobbyMessage, kickUser, setVoiceStatus, sendRtcSignal, fetchIceServers } from './api/lobby';
+import type { DrinkingReason, LobbyState, PlayerState, RtcSignalMessage } from './president-client/types';
+import { VoiceChatManager } from './president-client/voice';
 import Drink from './components/game/Drink';
 import GameScreen from './components/game/GameScreen';
 import LobbyHome from './components/lobby/LobbyHome';
@@ -79,6 +80,8 @@ function App() {
   const playerIdRef = useRef<string | null>(null);
   const lobbyWsRef = useRef<SocketHandler | null>(null);
   const gameWsRef = useRef<SocketHandler | null>(null);
+  const voiceRef = useRef<VoiceChatManager | null>(null);
+  const [voiceUi, setVoiceUi] = useState({ joined: false, muted: false });
 
   const handleStartGame = async () => {
     if (!lobbyState || !lobbyUserId) throw new Error('Cannot start game: no lobby state');
@@ -105,11 +108,55 @@ function App() {
     lobbyWsRef.current?.close();
     lobbyWsRef.current = getSocketHandler(
       () => openLobbyStateSocket(lobbyId, userId),
-      (data) => applyLobbyState(JSON.parse(data) as LobbyState, userId),
+      (data) => {
+        const parsed = JSON.parse(data) as LobbyState | RtcSignalMessage;
+        if ('type' in parsed && parsed.type === 'rtc-signal') {
+          voiceRef.current?.handleSignal(parsed.from, parsed.signal);
+          return;
+        }
+        applyLobbyState(parsed as LobbyState, userId);
+      },
     );
   };
 
+  const teardownVoice = () => {
+    voiceRef.current?.leave();
+    voiceRef.current = null;
+    setVoiceUi({ joined: false, muted: false });
+  };
+
+  const handleJoinVoice = async (userId: string) => {
+    if (voiceRef.current?.joined) return;
+    const manager = new VoiceChatManager(
+      userId,
+      (toUserId, signal) => sendRtcSignal(lobbyIdRef.current, userId, toUserId, signal).catch(() => {}),
+      async () => (await fetchIceServers()).iceServers,
+    );
+    try {
+      await manager.join();
+    } catch (e) {
+      console.error('Unable to join voice chat:', e);
+      return;
+    }
+    voiceRef.current = manager;
+    setVoiceUi({ joined: true, muted: false });
+    await setVoiceStatus(lobbyIdRef.current, userId, true);
+  };
+
+  const handleLeaveVoice = (userId: string) => {
+    teardownVoice();
+    setVoiceStatus(lobbyIdRef.current, userId, false).catch(() => {});
+  };
+
+  const handleToggleMute = () => {
+    setVoiceUi((prev) => {
+      voiceRef.current?.setMuted(!prev.muted);
+      return { ...prev, muted: !prev.muted };
+    });
+  };
+
   const handleExitLobby = async () => {
+    teardownVoice();
     // Disconnect from websocket first to avoid receiving updates while we're in the process of exiting.
     lobbyWsRef.current?.close();
     lobbyWsRef.current = null;
@@ -172,6 +219,7 @@ function App() {
   };
 
   const handleKicked = () => {
+    teardownVoice();
     lobbyWsRef.current?.close();
     lobbyWsRef.current = null;
     gameWsRef.current?.close();
@@ -210,6 +258,16 @@ function App() {
       updateState({ type: 'CHAT_PREVIEW_SHOWN', name: latest.userName, text: latest.text });
     }
     lastMessageCountRef.current = newLobbyState.messages.length;
+
+    if (voiceRef.current?.joined) {
+      const me = newLobbyState.users.find((u) => u.id === myLobbyUserId);
+      if (me && !me.inVoice) {
+        setVoiceStatus(lobbyIdRef.current, myLobbyUserId, true).catch(() => {});
+      }
+      voiceRef.current.reconcile(
+        newLobbyState.users.filter((u) => u.inVoice && u.id !== myLobbyUserId).map((u) => u.id),
+      );
+    }
   };
 
   useEffect(() => {
@@ -219,6 +277,8 @@ function App() {
       window.removeEventListener('resize', onResize);
       lobbyWsRef.current?.close();
       gameWsRef.current?.close();
+      voiceRef.current?.leave();
+      voiceRef.current = null;
     };
   }, []);
 
@@ -248,6 +308,11 @@ function App() {
           if (user) sendLobbyMessage(lobbyIdRef.current, lobbyUserId, user.name, text);
         }}
         onKickUser={(targetUserId) => kickUser(lobbyIdRef.current, lobbyUserId, targetUserId)}
+        inVoice={voiceUi.joined}
+        isMuted={voiceUi.muted}
+        onJoinVoice={() => handleJoinVoice(lobbyUserId)}
+        onLeaveVoice={() => handleLeaveVoice(lobbyUserId)}
+        onToggleMute={handleToggleMute}
       />
     );
   }

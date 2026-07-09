@@ -3,4 +3,6 @@ interface Env {
   PRESIDENT_DO: DurableObjectNamespace<import('./src/president-do').PresidentGameStateDurableObject>;
   LOBBY_DO: DurableObjectNamespace<import('./src/lobby-do').LobbyDurableObject>;
   ALLOWED_ORIGIN: string;
+  REALTIME_TURN_KEY_ID?: string;
+  REALTIME_TURN_API_TOKEN?: string;
 }

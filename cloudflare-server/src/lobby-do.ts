@@ -78,6 +78,14 @@ export class LobbyDurableObject extends BaseDurableObject<LobbySessionAttachment
       return this.handleKick(request);
     }
 
+    if (url.pathname === '/lobby/voice' && request.method === 'POST') {
+      return this.handleVoice(request);
+    }
+
+    if (url.pathname === '/lobby/signal' && request.method === 'POST') {
+      return this.handleSignal(request);
+    }
+
     return new Response('Not found', { status: 404 });
   }
 
@@ -140,6 +148,41 @@ export class LobbyDurableObject extends BaseDurableObject<LobbySessionAttachment
     }
     await this.resetAlarm();
     return Response.json(result);
+  }
+
+  private async handleVoice(request: Request): Promise<Response> {
+    const { lobbyId, lobbyUserId, inVoice } = await request.json<{
+      lobbyId: string;
+      lobbyUserId: string;
+      inVoice: boolean;
+    }>();
+    const result = await this.lobbyHost.setVoiceStatus(lobbyId, lobbyUserId, inVoice);
+    await this.resetAlarm();
+    return Response.json(result);
+  }
+
+  private async handleSignal(request: Request): Promise<Response> {
+    const { fromUserId, toUserId, signal } = await request.json<{
+      lobbyId: string;
+      fromUserId: string;
+      toUserId: string;
+      signal: unknown;
+    }>();
+
+    let delivered = false;
+    for (const [ws, attachment] of this.sessions) {
+      if (attachment.lobbyUserId !== toUserId) continue;
+      try {
+        ws.send(JSON.stringify({ type: 'rtc-signal', from: fromUserId, signal }));
+        delivered = true;
+      } catch (e) {
+        console.error('Failed to relay signal, removing stale session:', e);
+        this.sessions.delete(ws);
+      }
+    }
+
+    await this.resetAlarm();
+    return Response.json({ delivered });
   }
 
   private async kickFromGame(gameId: string, lobbyUserId: string): Promise<void> {

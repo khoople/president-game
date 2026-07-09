@@ -6,6 +6,7 @@ export interface LobbyUser {
   joinedAt?: number;
   isHost: boolean;
   isDisconnected: boolean;
+  inVoice: boolean;
 }
 
 export interface LobbyMessage {
@@ -51,6 +52,27 @@ export interface UpdateLobbyResponse extends Partial<LobbyState> {
 
 export interface KickUserResponse extends Partial<LobbyState> {
   error?: string;
+}
+
+export interface SetVoiceStatusResponse extends Partial<LobbyState> {
+  error?: string;
+}
+
+// Voice chat types
+
+export type RtcSignal =
+  | { kind: 'offer'; sdp: string }
+  | { kind: 'answer'; sdp: string }
+  | { kind: 'ice'; candidate: RTCIceCandidateInit };
+
+export interface RtcSignalMessage {
+  type: 'rtc-signal';
+  from: string;
+  signal: RtcSignal;
+}
+
+export interface IceServersResponse {
+  iceServers: RTCIceServer[];
 }
 
 // Game response types

@@ -9,6 +9,7 @@ import type {
   SendMessageResponse,
   UpdateLobbyResponse,
   KickUserResponse,
+  SetVoiceStatusResponse,
 } from './types';
 
 export class LobbyHost {
@@ -23,7 +24,7 @@ export class LobbyHost {
 
     // Create fresh state directly — don't use getLobbyState since the new lobbyId won't exist yet.
     const lobbyState: LobbyState = { lobbyId, users: [], messages: [], status: 'waiting' };
-    lobbyState.users.push({ id: lobbyUserId, name: userName, joinedAt: Date.now(), isHost: true, isDisconnected: true });
+    lobbyState.users.push({ id: lobbyUserId, name: userName, joinedAt: Date.now(), isHost: true, isDisconnected: true, inVoice: false });
     await this.saveLobbyState(lobbyId, lobbyState);
 
     return { lobbyId, lobbyUserId };
@@ -39,7 +40,7 @@ export class LobbyHost {
 
     const lobbyUserId = crypto.randomUUID();
     const isHost = lobbyState.users.length === 0;
-    lobbyState.users.push({ id: lobbyUserId, name: userName, joinedAt: Date.now(), isHost, isDisconnected: true });
+    lobbyState.users.push({ id: lobbyUserId, name: userName, joinedAt: Date.now(), isHost, isDisconnected: true, inVoice: false });
     await this.saveLobbyState(lobbyId, lobbyState);
     await this.sendLobbyState(lobbyId, lobbyState);
 
@@ -102,8 +103,23 @@ export class LobbyHost {
     if (!user) return;
 
     user.isDisconnected = !isConnected;
+    if (!isConnected) user.inVoice = false;
     await this.saveLobbyState(lobbyId, lobbyState);
     await this.sendLobbyState(lobbyId, lobbyState);
+  }
+
+  async setVoiceStatus(lobbyId: string, lobbyUserId: string, inVoice: boolean): Promise<SetVoiceStatusResponse> {
+    const lobbyState = await this.getLobbyState(lobbyId);
+    if (!lobbyState) return { error: `Lobby '${lobbyId}' not found.` };
+
+    const user = lobbyState.users.find((u) => u.id === lobbyUserId);
+    if (!user) return { error: 'Player not found in lobby.' };
+
+    user.inVoice = inVoice;
+    await this.saveLobbyState(lobbyId, lobbyState);
+    await this.sendLobbyState(lobbyId, lobbyState);
+
+    return lobbyState;
   }
 
   async updateLobby(

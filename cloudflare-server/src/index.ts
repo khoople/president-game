@@ -64,6 +64,37 @@ async function routeLobby(request: Request, env: Env): Promise<Response> {
   return stub.fetch(forwarded);
 }
 
+const STUN_SERVER = { urls: 'stun:stun.cloudflare.com:3478' };
+
+async function handleIceServers(env: Env): Promise<Response> {
+  if (!env.REALTIME_TURN_KEY_ID || !env.REALTIME_TURN_API_TOKEN) {
+    return Response.json({ iceServers: [STUN_SERVER] });
+  }
+
+  try {
+    const response = await fetch(
+      `https://rtc.live.cloudflare.com/v1/turn/keys/${env.REALTIME_TURN_KEY_ID}/credentials/generate-ice-servers`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${env.REALTIME_TURN_API_TOKEN}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ ttl: 3600 }),
+      },
+    );
+    if (!response.ok) {
+      console.error('TURN credential request failed:', response.status);
+      return Response.json({ iceServers: [STUN_SERVER] });
+    }
+    const { iceServers } = await response.json<{ iceServers: unknown[] }>();
+    return Response.json({ iceServers: [STUN_SERVER, ...iceServers] });
+  } catch (e) {
+    console.error('TURN credential request failed:', e);
+    return Response.json({ iceServers: [STUN_SERVER] });
+  }
+}
+
 async function routeGame(request: Request, env: Env): Promise<Response> {
   const url = new URL(request.url);
   const isWebSocket = request.headers.get('Upgrade') === 'websocket';
@@ -107,6 +138,10 @@ export default {
     if (url.pathname.startsWith('/game/')) {
       const response = await routeGame(request, env);
       return isWebSocket ? response : withCors(response, origin, allowedOrigin);
+    }
+
+    if (url.pathname === '/voice/ice-servers' && request.method === 'GET') {
+      return withCors(await handleIceServers(env), origin, allowedOrigin);
     }
 
     if (url.pathname === '/') {

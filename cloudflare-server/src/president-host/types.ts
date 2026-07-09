@@ -4,6 +4,7 @@ export interface LobbyUser {
   joinedAt?: number;
   isHost: boolean;
   isDisconnected: boolean;
+  inVoice: boolean;
 }
 
 export interface LobbyMessage {
@@ -70,6 +71,10 @@ export interface UpdateLobbyResponse extends Partial<LobbyState> {
 }
 
 export interface KickUserResponse extends Partial<LobbyState> {
+  error?: string;
+}
+
+export interface SetVoiceStatusResponse extends Partial<LobbyState> {
   error?: string;
 }
 

@@ -8,6 +8,9 @@ import type {
   SendMessageResponse,
   UpdateLobbyResponse,
   KickUserResponse,
+  SetVoiceStatusResponse,
+  RtcSignal,
+  IceServersResponse,
 } from '../president-client/types';
 
 async function postJson<T>(path: string, body: unknown): Promise<T> {
@@ -42,6 +45,20 @@ export async function updateLobby(lobbyId: string, lobbyUserId: string, updates:
 
 export async function kickUser(lobbyId: string, lobbyUserId: string, targetUserId: string): Promise<KickUserResponse> {
   return postJson('/lobby/kick', { lobbyId, lobbyUserId, targetUserId });
+}
+
+export async function setVoiceStatus(lobbyId: string, lobbyUserId: string, inVoice: boolean): Promise<SetVoiceStatusResponse> {
+  return postJson('/lobby/voice', { lobbyId, lobbyUserId, inVoice });
+}
+
+export async function sendRtcSignal(lobbyId: string, fromUserId: string, toUserId: string, signal: RtcSignal): Promise<{ delivered: boolean }> {
+  return postJson('/lobby/signal', { lobbyId, fromUserId, toUserId, signal });
+}
+
+export async function fetchIceServers(): Promise<IceServersResponse> {
+  const res = await fetch(`${API_BASE_URL}/voice/ice-servers`);
+  if (!res.ok) throw new Error(`Request failed: ${res.status}`);
+  return res.json() as Promise<IceServersResponse>;
 }
 
 export function openLobbyStateSocket(lobbyId: string, lobbyUserId: string): WebSocket {
