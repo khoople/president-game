@@ -4,13 +4,17 @@ type Peer = {
   pc: RTCPeerConnection;
   audioEl: HTMLAudioElement;
   pendingIce: RTCIceCandidateInit[];
+  offerTimer?: ReturnType<typeof setTimeout>;
 };
+
+const OFFER_TIMEOUT = 10000;
 
 export class VoiceChatManager {
   private peers = new Map<string, Peer>();
   private desired = new Set<string>();
   private localStream: MediaStream | null = null;
   private iceServers: RTCIceServer[] = [];
+  private muted = false;
   private myUserId: string;
   private sendSignal: (toUserId: string, signal: RtcSignal) => void;
   private getIceServers: () => Promise<RTCIceServer[]>;
@@ -38,9 +42,11 @@ export class VoiceChatManager {
       console.error('Failed to fetch ICE servers, using none:', e);
       this.iceServers = [];
     }
+    document.addEventListener('visibilitychange', this.onVisibilityChange);
   }
 
   leave(): void {
+    document.removeEventListener('visibilitychange', this.onVisibilityChange);
     for (const peerId of [...this.peers.keys()]) {
       this.closePeer(peerId);
     }
@@ -50,9 +56,35 @@ export class VoiceChatManager {
   }
 
   setMuted(muted: boolean): void {
+    this.muted = muted;
     this.localStream?.getAudioTracks().forEach((track) => {
       track.enabled = !muted;
     });
+  }
+
+  private onVisibilityChange = () => {
+    if (document.visibilityState !== 'visible' || !this.joined) return;
+    this.restartConnections();
+  };
+
+  private async restartConnections(): Promise<void> {
+    const track = this.localStream?.getAudioTracks()[0];
+    if (!track || track.readyState === 'ended') {
+      try {
+        this.localStream?.getTracks().forEach((t) => t.stop());
+        this.localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        this.setMuted(this.muted);
+      } catch (e) {
+        console.error('Failed to reacquire microphone:', e);
+        return;
+      }
+    }
+    for (const peerId of [...this.peers.keys()]) {
+      this.closePeer(peerId);
+    }
+    for (const peerId of this.desired) {
+      this.createPeer(peerId, true);
+    }
   }
 
   reconcile(inVoicePeerIds: string[]): void {
@@ -75,7 +107,6 @@ export class VoiceChatManager {
     if (!this.joined) return;
     try {
       if (signal.kind === 'offer') {
-        if (!this.desired.has(fromUserId)) return;
         if (this.peers.has(fromUserId)) this.closePeer(fromUserId);
         const peer = this.createPeer(fromUserId, false);
         await peer.pc.setRemoteDescription({ type: 'offer', sdp: signal.sdp });
@@ -145,6 +176,13 @@ export class VoiceChatManager {
           this.sendSignal(peerId, { kind: 'offer', sdp: offer.sdp! });
         })
         .catch((e) => console.error('Failed to create offer:', e));
+      peer.offerTimer = setTimeout(() => {
+        if (pc.signalingState !== 'have-local-offer') return;
+        this.closePeer(peerId);
+        if (this.joined && this.desired.has(peerId)) {
+          this.createPeer(peerId, true);
+        }
+      }, OFFER_TIMEOUT);
     }
 
     return peer;
@@ -161,6 +199,7 @@ export class VoiceChatManager {
     const peer = this.peers.get(peerId);
     if (!peer) return;
     this.peers.delete(peerId);
+    if (peer.offerTimer !== undefined) clearTimeout(peer.offerTimer);
     peer.pc.onicecandidate = null;
     peer.pc.ontrack = null;
     peer.pc.onconnectionstatechange = null;
