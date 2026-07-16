@@ -11,6 +11,7 @@ function createBaseGameState(gameId: string, lobbyId: string): GameState {
     activePlayerNumber: 1,
     activeHandPlayedBy: null,
     status: 'PLAYING',
+    gameMessage: '',
   };
 }
 

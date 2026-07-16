@@ -80,6 +80,8 @@ export interface SetVoiceStatusResponse extends Partial<LobbyState> {
 
 export type DrinkingReason = 'passed' | 'social' | 'skipped';
 
+export type PlayerMessageClass = 'notice' | 'danger' | 'success';
+
 export interface PlayResponse {
   isValid: boolean;
   invalidCode?: string;
@@ -118,6 +120,7 @@ export interface GameState {
   activePlayerNumber: number;
   activeHandPlayedBy: number | null;
   status: 'PLAYING' | 'GAME_OVER';
+  gameMessage: string;
 }
 
 export interface Opponent {
@@ -143,6 +146,9 @@ export interface PlayerState {
   gameStatus: 'PLAYING' | 'GAME_OVER';
   isDrinking: boolean;
   drinkingReason: DrinkingReason | null;
+  gameMessage: string;
+  playerMessage: string;
+  playerMessageClass: PlayerMessageClass;
 }
 
 export interface Play {

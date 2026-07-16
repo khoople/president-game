@@ -96,6 +96,8 @@ export interface PlayResponse {
 
 export type DrinkingReason = 'passed' | 'social' | 'skipped';
 
+export type PlayerMessageClass = 'notice' | 'danger' | 'success';
+
 export interface OpponentPlayerState {
   playerNumber: number;
   playerName: string;
@@ -119,4 +121,7 @@ export interface PlayerState {
   gameStatus: 'PLAYING' | 'GAME_OVER';
   isDrinking: boolean;
   drinkingReason: DrinkingReason | null;
+  gameMessage: string;
+  playerMessage: string;
+  playerMessageClass: PlayerMessageClass;
 }

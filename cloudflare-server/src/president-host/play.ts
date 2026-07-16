@@ -1,5 +1,6 @@
 import { GameState, Play, PlayResponse, Player } from './types';
 import { rankOf, rankIndex } from './card';
+import { ordinal } from './ordinals';
 
 /**
  * Make a play. Determines whether play is valid and, if so, applies it to the game state.
@@ -27,6 +28,7 @@ export function applyPlay(play: Play, gameState: GameState): PlayResponse {
   if (play.action === 'PASS') {
     player.isDrinking = true;
     player.drinkingReason = 'passed';
+    gameState.gameMessage = `${player.playerName} passed`;
     advanceTurn(gameState);
     return { isValid: true };
   }
@@ -50,7 +52,11 @@ export function applyPlay(play: Play, gameState: GameState): PlayResponse {
     gameState.discard = [chosenHand];
     gameState.activeHand = [];
     gameState.activeHandPlayedBy = null;
+    gameState.gameMessage = `${player.playerName} cleared with a 2`;
     checkIfPlayerWon(player, gameState);
+    if (player.winPosition !== null) {
+      gameState.gameMessage = `${player.playerName} went out in ${ordinal(player.winPosition)} place`;
+    }
     checkGameOver(gameState);
     // If the player ran out of cards, they can't take another turn — skip to the next player.
     if (player.hand.length === 0) {
@@ -97,6 +103,10 @@ export function applyPlay(play: Play, gameState: GameState): PlayResponse {
 
   advanceTurn(gameState);
 
+  let gameMessage = chosenIsFour
+    ? `${player.playerName} played social with a 4`
+    : `${player.playerName} played ${formatHand(chosenHand)}`;
+
   // If the same rank is played on top of an existing hand, the next player is skipped.
   // 4s are wild and don't count as a rank match for this purpose.
   if (!activeIsEmpty && !chosenIsFour && rankOf(handToBeat[0]) !== '4' && rankIndex(chosenHand[0]) === rankIndex(handToBeat[0]) && chosenHand.length === handToBeat.length) {
@@ -104,6 +114,7 @@ export function applyPlay(play: Play, gameState: GameState): PlayResponse {
     if (skippedPlayer) {
       skippedPlayer.isDrinking = true;
       skippedPlayer.drinkingReason = 'skipped';
+      gameMessage = `${player.playerName} skipped ${skippedPlayer.playerName} with ${formatHand(chosenHand)}`;
     }
     advanceTurn(gameState);
   }
@@ -112,6 +123,10 @@ export function applyPlay(play: Play, gameState: GameState): PlayResponse {
   gameState.activeHandPlayedBy = player.playerNumber;
   removeFromHand(player.hand, chosenHand);
   checkIfPlayerWon(player, gameState);
+  if (player.winPosition !== null) {
+    gameMessage = `${player.playerName} went out in ${ordinal(player.winPosition)} place`;
+  }
+  gameState.gameMessage = gameMessage;
   checkGameOver(gameState);
 
   return { isValid: true };
@@ -142,7 +157,17 @@ export function advanceTurn(gameState: GameState): void {
     gameState.discard.push(gameState.activeHand);
     gameState.activeHand = [];
     gameState.activeHandPlayedBy = null;
+    const activePlayer = gameState.players.find((p) => p.playerNumber === gameState.activePlayerNumber);
+    if (activePlayer) {
+      gameState.gameMessage = `Everyone passed. Clears to ${activePlayer.playerName}`;
+    }
   }
+}
+
+function formatHand(hand: string[]): string {
+  const rank = rankOf(hand[0]);
+  const displayRank = rank === 'T' ? '10' : rank;
+  return hand.length === 1 ? `a ${displayRank}` : `${hand.length} ${displayRank}'s`;
 }
 
 function removeFromHand(hand: string[], cards: string[]): void {

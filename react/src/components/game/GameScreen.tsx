@@ -63,9 +63,6 @@ export default function GameScreen({ playerState, gameId, isMobile, chatPreview,
   };
 
   const isMyTurn = playerState.playerNumber === playerState.activePlayerNumber;
-  const activePlayerName =
-    playerState.opponents.find((o) => o.playerNumber === playerState.activePlayerNumber)?.playerName
-    ?? playerState.playerName;
 
   if (showRules) {
     return <RuleScreen onClose={() => setShowRules(false)} />;
@@ -86,10 +83,9 @@ export default function GameScreen({ playerState, gameId, isMobile, chatPreview,
           isMobile={isMobile}
         />
         <Turn
-          isMyTurn={isMyTurn}
-          activePlayerName={activePlayerName}
-          myWinPosition={playerState.playerWinPosition}
-          gameStatus={playerState.gameStatus}
+          gameMessage={playerState.gameMessage}
+          playerMessage={playerState.playerMessage}
+          playerMessageClass={playerState.playerMessageClass}
         />
       </div>
       <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

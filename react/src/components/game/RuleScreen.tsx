@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react';
 import Card from './Card';
+import { CARD_DIMS, type CardSize } from '../../card-dims';
+
+const STACK_OVERLAP: Record<CardSize, number> = { small: 18, medium: 22, large: 28 };
 
 type Props = {
   onClose?: () => void;
@@ -114,7 +117,18 @@ export default function RuleScreen({ onClose }: Props) {
               <span style={{ color: '#888', fontSize: '20px' }}>&lt;</span>
               <Card rank="K" suit="S" size={cardSize} />
               <span style={{ color: '#888', fontSize: '20px' }}>&lt;</span>
-              <Card rank="A" suit="H" size={cardSize} />
+              <div style={{
+                position: 'relative',
+                width: `${CARD_DIMS[cardSize].width + STACK_OVERLAP[cardSize]}px`,
+                height: `${CARD_DIMS[cardSize].height}px`,
+              }}>
+                <div style={{ position: 'absolute', left: 0, top: 0, zIndex: 0 }}>
+                  <Card rank="3" suit="H" size={cardSize} />
+                </div>
+                <div style={{ position: 'absolute', left: `${STACK_OVERLAP[cardSize]}px`, top: 0, zIndex: 1 }}>
+                  <Card rank="3" suit="S" size={cardSize} />
+                </div>
+              </div>
             </div>
             <p style={paragraph}>
               Cards rank from low to high: 3, 5, 6, 7, 8, 9, 10, J, Q, K, A (Suits do not matter).<br/>

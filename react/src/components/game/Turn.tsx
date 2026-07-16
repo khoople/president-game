@@ -1,48 +1,57 @@
-import { ordinal } from '../../president-client/ordinals';
+import { useEffect, useState } from 'react';
+import type { PlayerMessageClass } from '../../president-client/types';
+import type { CSSProperties } from 'react';
 
 interface TurnProps {
-  isMyTurn: boolean;
-  activePlayerName: string;
-  myWinPosition: number | null;
-  gameStatus: 'PLAYING' | 'GAME_OVER';
+  gameMessage: string;
+  playerMessage: string;
+  playerMessageClass: PlayerMessageClass;
 }
 
-const Turn = ({ isMyTurn, activePlayerName, myWinPosition, gameStatus }: TurnProps) => {
-  if (gameStatus === 'GAME_OVER' && myWinPosition === null) {
-    return (
-      <span style={{
-        color: '#ff4444',
-        fontSize: '20px',
-        fontWeight: '900',
-        letterSpacing: '2px',
-        textShadow: '0 1px 4px rgba(0,0,0,0.6)',
-      }}>
-        YOU ARE THE ASSHOLE!
-      </span>
-    );
+const PLAYER_MESSAGE_STYLES: Record<PlayerMessageClass, CSSProperties> = {
+  notice: {
+    color: '#ffe000',
+    fontSize: '14px',
+  },
+  danger: {
+    color: '#ff4444',
+    fontSize: '20px',
+    letterSpacing: '2px',
+  },
+  success: {
+    color: '#5a9fd4',
+    fontSize: '14px',
+  },
+};
+
+const GAME_MESSAGE_STYLE: CSSProperties = {
+  color: '#00ff44',
+  fontSize: '14px',
+};
+
+const Turn = ({ gameMessage, playerMessage, playerMessageClass }: TurnProps) => {
+  const [shownGameMessage, setShownGameMessage] = useState(gameMessage);
+  const [showGameMessage, setShowGameMessage] = useState(gameMessage !== '');
+
+  if (gameMessage !== shownGameMessage) {
+    setShownGameMessage(gameMessage);
+    setShowGameMessage(gameMessage !== '');
   }
 
-  if (myWinPosition !== null) {
-    return (
-      <span style={{
-        color: '#5a9fd4',
-        fontSize: '14px',
-        fontWeight: '900',
-        textShadow: '0 1px 4px rgba(0,0,0,0.6)',
-      }}>
-        {`YOU FINISHED IN ${ordinal(myWinPosition)} PLACE!`}
-      </span>
-    );
-  }
+  useEffect(() => {
+    if (!showGameMessage) return;
+    const timeout = setTimeout(() => setShowGameMessage(false), 3000);
+    return () => clearTimeout(timeout);
+  }, [showGameMessage, gameMessage]);
 
   return (
     <span style={{
-      color: '#ffe000',
-      fontSize: '14px',
       fontWeight: '900',
+      textTransform: 'uppercase',
       textShadow: '0 1px 4px rgba(0,0,0,0.6)',
+      ...(showGameMessage ? GAME_MESSAGE_STYLE : PLAYER_MESSAGE_STYLES[playerMessageClass]),
     }}>
-      {isMyTurn ? 'YOUR TURN!' : `WAITING FOR ${activePlayerName.toUpperCase()} TO PLAY`}
+      {showGameMessage ? gameMessage : playerMessage}
     </span>
   );
 };
